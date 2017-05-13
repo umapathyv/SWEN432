@@ -1,0 +1,31 @@
+
+a)
+db.res_ref.find({'reserves.date':"2017-03-16"})
+db.res_ref.distinct("marina" ,  {'reserves.date':"2017-03-16"});
+
+db.boat.distinct("name", {marina : "Sea View" , number:313});
+db.boat.distinct("name", {marina : "Port Nicholson" , number:919});
+
+db.sailor.distinct("name",{sailorId:111});
+db.sailor.distinct("name",{sailorId:818});
+
+b)
+
+
+
+var curs = db.res_ref.find({'reserves.date':"2017-03-16"}) ;
+
+while (curs.hasNext()) {
+ref = curs.next()
+
+m= db.marina.findOne({
+name: ref.marina})
+
+b = db.boat.findOne({
+number: ref.reserves.boat})
+
+s = db.sailor.findOne({
+sailorId: ref.reserves.sailor})
+
+ret = {marinaName : m.name,boatName : b.name, sailorName :s.name}
+print(tojson(ret)) }

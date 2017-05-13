@@ -1,0 +1,12 @@
+a)
+
+
+
+db.sailor.aggregate( [  {"$group": { "_id": { name: "$name", sailorId: "$sailorId" } } }  ]  );
+
+
+
+b)
+
+
+ db.sailor.distinct('name' , {'skills':{$size:3, $all:["row", "sail", "motor" ]}});

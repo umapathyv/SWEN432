@@ -18,7 +18,7 @@ Question 1.
 a)
 
 > db.reserves.update({'marina.name':{$regex:/^Port/}}, {$set:{'marina.name':"Port Nicholson"},$currentDate: {lastModified: true}},{multi: true});
-WriteResult({ "nMatched" : 7, "nUpserted" : 0, "nModified" : 7 })
+WriteResult({ "nMatched" : 7, "nUpserted" : 0, "nModified" : 6 })
 > db.reserves.find ({'marina.name':{$regex:/^Port/}});
 { "_id" : ObjectId("54f10525f60cb24112233f18"), "marina" : { "name" : "Port Nicholson", "location" : "Wellington" }, "reserves" : { "boat" : { "name" : "Mermaid", "number" : 919, "color" : "white", "driven_by" : [ "sail", "motor" ] }, "sailor" : { "name" : "Milan", "sailorId" : 818, "skills" : [ "row", "sail", "motor", "first aid" ], "address" : "Wellington" }, "date" : "2017-03-16" }, "lastModified" : ISODate("2017-05-09T01:57:07.712Z") }
 { "_id" : ObjectId("54f1058af60cb24112233f1a"), "marina" : { "name" : "Port Nicholson", "location" : "Wellington" }, "reserves" : { "boat" : { "name" : "Mermaid", "number" : 919, "color" : "white", "driven_by" : [ "sail", "motor" ] }, "sailor" : { "name" : "James", "sailorId" : 707, "skills" : [ "row", "sail", "motor", "fish" ], "address" : "Wellington" }, "date" : "2017-03-17" }, "lastModified" : ISODate("2017-05-09T01:57:07.712Z") }
@@ -41,10 +41,13 @@ WriteResult({ "nMatched" : 1, "nUpserted" : 0, "nModified" : 1 })
 
 c)
 
-> db.reserves.insert({"marina" : { "name" : "Port Nicholson"}, "reserves" : { "boat" : { "number" : 717 }, "sailor" : {  "sailorId" :  919}, "date" : "2017-03-25" }});
+> db.reserves.insert({"marina" : { "name" : "Port Nicholson"}, "reserves" : { "boat" : { "number" : 717 , "name" : "Tarakihi", "color" : "red", "driven_by" : [ "row, motor" ] }, "sailor" : { "Eileen" : "Paul", "sailorId" :  919 ,"skills" : ["sail", "motor", "swim"],"address" : "Lower Hutt"}, "date" : "2017-03-25" }});
 WriteResult({ "nInserted" : 1 })
+
+
 > db.reserves.find({'reserves.date':"2017-03-25"});
-{ "_id" : ObjectId("591122d1691dbfd2648e4c40"), "marina" : { "name" : "Port Nicholson" }, "reserves" : { "boat" : { "number" : 717 }, "sailor" : { "sailorId" : 919 }, "date" : "2017-03-25" } }
+{ "_id" : ObjectId("591694ed367c5cccfdb4819d"), "marina" : { "name" : "Port Nicholson" }, "reserves" : { "boat" : { "number" : 717, "name" : "Tarakihi", "color" : "red", "driven_by" : [ "row, motor" ] }, "sailor" : { "Eileen" : "Paul", "sailorId" : 919, "skills" : [ "sail", "motor", "swim" ], "address" : "Lower Hutt" }, "date" : "2017-03-25" } }
+
 
 
 
@@ -68,14 +71,29 @@ WriteResult({ "nInserted" : 1 })
 
 f)
 
-
-> db.reserves.createIndex( { 'reserves.boat.number': 1 }, { 'reserves.sailor.sailorId': 1 }, { unique: true } );
+i.
+> db.reserves.createIndex( { 'reserves.boat.number': 1 , 'reserves.date': 1}, { unique: true } );
 {
         "createdCollectionAutomatically" : false,
         "numIndexesBefore" : 1,
         "numIndexesAfter" : 2,
         "ok" : 1
 }
+
+
+ii.
+> db.reserves.createIndex( { 'reserves.sailor.sailorId': 1 , 'reserves.date': 1}, { unique: true } );
+{
+        "createdCollectionAutomatically" : false,
+        "numIndexesBefore" : 2,
+        "numIndexesAfter" : 3,
+        "ok" : 1
+}
+
+
+
+
+iii.
 
 > db.reserves.getIndexes();
 [
@@ -89,14 +107,54 @@ f)
         },
         {
                 "v" : 1,
+                "unique" : true,
                 "key" : {
-                        "reserves.boat.number" : 1
+                        "reserves.boat.number" : 1,
+                        "reserves.date" : 1
                 },
-                "name" : "reserves.boat.number_1",
-                "ns" : "BoatHire.reserves",
-                "reserves.sailor.sailorId" : 1
+                "name" : "reserves.boat.number_1_reserves.date_1",
+                "ns" : "BoatHire.reserves"
+        },
+        {
+                "v" : 1,
+                "unique" : true,
+                "key" : {
+                        "reserves.sailor.sailorId" : 1,
+                        "reserves.date" : 1
+                },
+                "name" : "reserves.sailor.sailorId_1_reserves.date_1",
+                "ns" : "BoatHire.reserves"
         }
 ]
+
+
+Insert two documents with same boat number in the same date :
+
+> db.reserves.insert({ "marina" : { "name" : "Port Nicholson ", "location" : "Wellington" }, "reserves" : { "boat" : { "name" : "Dolphin", "number" : 10, "color" : "white", "driven_by" : [ "sail, motor" ] }, "sailor" : { "name" : "Paul", "sailorId" : 110, "skills" : ["row", "swim"], "address" : "Upper Hutt" }, "date" : "2018-03-30" } });
+WriteResult({ "nInserted" : 1 })
+> db.reserves.insert({ "marina" : { "name" : "Evans Bay ", "location" : "Wellington" }, "reserves" : { "boat" : { "name" : "Dolphin", "number" : 10, "color" : "white", "driven_by" : [ "sail, motor" ] }, "sailor" : { "name" : "Paul", "sailorId" : 10, "skills" : ["row", "swim"], "address" : "Upper Hutt" }, "date" : "2018-03-30" } });
+WriteResult({
+        "nInserted" : 0,
+        "writeError" : {
+                "code" : 11000,
+                "errmsg" : "insertDocument :: caused by :: 11000 E11000 duplicate key error index: BoatHire.reserves.$reserves.boat.number_1_reserves.date_1  dup key: { : 10.0, : \"2018-03-30\" }"
+        }
+})
+
+
+
+Insert two documents with same sailorId in the same date :
+
+> db.reserves.insert({ "marina" : { "name" : "Port Nicholson ", "location" : "Wellington" }, "reserves" : { "boat" : { "name" : "Dolphin", "number" : 2, "color" : "white", "driven_by" : [ "sail, motor" ] }, "sailor" : { "name" : "Paul", "sailorId" : 110, "skills" : ["row", "swim"], "address" : "Upper Hutt" }, "date" : "2018-03-3" } });
+WriteResult({ "nInserted" : 1 })
+> db.reserves.insert({ "marina" : { "name" : "Port Nicholson ", "location" : "Wellington" }, "reserves" : { "boat" : { "name" : "Dolphin", "number" : 3, "color" : "white", "driven_by" : [ "sail, motor" ] }, "sailor" : { "name" : "Paul", "sailorId" : 110, "skills" : ["row", "swim"], "address" : "Upper Hutt" }, "date" : "2018-03-3" } });
+WriteResult({
+        "nInserted" : 0,
+        "writeError" : {
+                "code" : 11000,
+                "errmsg" : "insertDocument :: caused by :: 11000 E11000 duplicate key error index: BoatHire.reserves.$reserves.sailor.sailorId_1_reserves.date_1  dup key: { : 110.0, : \"2018-03-3\" }"
+        }
+})
 
 
 
@@ -124,27 +182,41 @@ c)
         "Paul"
 ]
 
+2
 d)
-> db.reserves.aggregate([{ $match: {'reserves.date': "2017-03-16"} }, {$project: {marinaName: "$marina.name", reservesBoatName: "$reserves.boat.name", reservesSailorName: "$reserves.sailor.name"} }] );
-{ "_id" : ObjectId("54f10484f60cb24112233f15"), "marinaName" : "Sea View", "reservesBoatName" : "Flying Dutch", "reservesSailorName" : "Peter" }
-{ "_id" : ObjectId("54f10525f60cb24112233f18"), "marinaName" : "Port Nicholson", "reservesBoatName" : "Mermaid", "reservesSailorName" : "Milan" }
+> db.reserves.distinct('marina.name', {'reserves.date': "2017-03-16" } );
+[ "Sea View", "Port Nicholson" ]
+>
+> db.reserves.distinct('reserves.boat.name' ,  {'reserves.date': "2017-03-16" });
+[ "Flying Dutch", "Mermaid" ]
+>
+> db.reserves.distinct('reserves.sailor.name',  {'reserves.date': "2017-03-16" });
+[ "Peter", "Milan" ]
+
+
+
+
+>  db.reserves.find({"reserves.date":"2017-03-16"},{ "marina.name": 1, "reserves.boat.name": 1,"reserves.sailor.name":1, "_id":0 })
+{ "marina" : { "name" : "Sea View" }, "reserves" : { "boat" : { "name" : "Flying Dutch" }, "sailor" : { "name" : "Peter" } } }
+{ "marina" : { "name" : "Port Nicholson" }, "reserves" : { "boat" : { "name" : "Mermaid" }, "sailor" : { "name" : "Milan" } } }
+>
+
+
+
+
+
+
 
 e)
 
-> db.reserves.find({'reserves.sailor.skills':"swim"},{ "reserves.sailor.name":1, "_id":0});
-{ "reserves" : { "sailor" : { "name" : "Eileen" } } }
-{ "reserves" : { "sailor" : { "name" : "Paul" } } }
+> db.reserves.distinct('reserves.sailor.name',{'reserves.sailor.skills':"swim"});
+[ "Eileen", "Paul" ]
 
 
 f)
-> db.reserves.find({'reserves.sailor.skills':["row", "sail", "motor" ]},{ "reserves.sailor.name":1, "_id":0});
-{ "reserves" : { "sailor" : { "name" : "Peter" } } }
-{ "reserves" : { "sailor" : { "name" : "Peter" } } }
-{ "reserves" : { "sailor" : { "name" : "Peter" } } }
+>  db.reserves.distinct('reserves.sailor.name' , {'reserves.sailor.skills':{$size:3, $all:["row", "sail", "motor" ]}});
+[ "Peter" ]
 
-
-> db.reserves.aggregate([{ $match: {'reserves.sailor.skills':{ $eq :["row", "sail", "motor" ]}} }, {$project: {reservesSailorName: "$reserves.sailor.name"} },   { $limit : 1 }] );
-{ "_id" : ObjectId("54f10484f60cb24112233f15"), "reservesSailorName" : "Peter" }
 
 Question 3
 a)
@@ -167,7 +239,7 @@ vehicle:[{
 timetable:[{
   line_name:  "Hutt Vale Line",
   service_no : 1 ,
-    time: "0605",
+    time: "0600",
     stop:  "Petone" ,
     latitude:-41.2865 ,
     longitude:  174.7762,
@@ -179,7 +251,7 @@ timetable:[{
 {
   line_name:  "Hutt Vale Line",
   service_no : 1 ,
-    time: "0617",
+    time: "0601",
     stop:  "Woburn" ,
     latitude:-41.227,
     longitude:  174.8851,
@@ -189,13 +261,25 @@ timetable:[{
 }
 
 ],
-datapoint:[{
+datapoint:[
+{
   line_name:  "Hutt Vale Line",
     service_no:  1,
     day:  "2017-03-22",
-    sequence:  "2017-03-22 06:05:00+1300",
-    latitude:  -41.2865,
-    longitude: 174.7762 ,
+    sequence:  "2017-03-22 06:00:10+1300",
+    latitude:  -41.227,
+    longitude:  174.8851 ,
+    speed:29.1
+
+}
+,
+{
+  line_name:  "Hutt Vale Line",
+    service_no:  1,
+    day:  "2017-03-22",
+    sequence:  "2017-03-22 06:00:20+1300",
+    latitude:  -41.227,
+    longitude:  174.8851 ,
     speed:29.1
 
 },
@@ -203,7 +287,39 @@ datapoint:[{
   line_name:  "Hutt Vale Line",
     service_no:  1,
     day:  "2017-03-22",
-    sequence:  "2017-03-22 06:17:00+1300",
+    sequence:  "2017-03-22 06:00:30+1300",
+    latitude:  -41.227,
+    longitude:  174.8851 ,
+    speed:29.1
+
+},
+{
+  line_name:  "Hutt Vale Line",
+    service_no:  1,
+    day:  "2017-03-22",
+    sequence:  "2017-03-22 06:00:40+1300",
+    latitude:  -41.227,
+    longitude:  174.8851 ,
+    speed:29.1
+
+}
+,
+{
+  line_name:  "Hutt Vale Line",
+    service_no:  1,
+    day:  "2017-03-22",
+    sequence:  "2017-03-22 06:00:50+1300",
+    latitude:  -41.227,
+    longitude:  174.8851 ,
+    speed:29.1
+
+}
+,
+{
+  line_name:  "Hutt Vale Line",
+    service_no:  1,
+    day:  "2017-03-22",
+    sequence:  "2017-03-22 06:01:00+1300",
     latitude:  -41.227,
     longitude:  174.8851 ,
     speed:29.1
@@ -213,6 +329,10 @@ datapoint:[{
 }
 
 b)
+The maximum number of instances in datapoint enetity type depends on the difference between the time in two instances of  timetable enetity type . For example, from "0600" to "0601" needs 60 seconds,
+
+and the time gap in datapoint in every 10 seconds, that is to say 60/10=6 , so there will be 6 instances in the datapoint.
+
 
 Question 4
 
@@ -237,22 +357,25 @@ MongoDB shell version: 2.6.7
 
 a)
 
-> db.sailor.distinct("name");
-[
-        "James",
-        "Peter",
-        "Milan",
-        "Eileen",
-        "Paul",
-        "Charmain",
-        "Gwendolynn"
-]
 
->
+
+> db.sailor.aggregate( [  {"$group": { "_id": { name: "$name", sailorId: "$sailorId" } } }  ]  );
+{ "_id" : { "name" : "Charmain", "sailorId" : 999 } }
+{ "_id" : { "name" : "Paul", "sailorId" : 110 } }
+{ "_id" : { "name" : "Milan", "sailorId" : 818 } }
+{ "_id" : { "name" : "Peter", "sailorId" : 111 } }
+{ "_id" : { "name" : "Gwendolynn", "sailorId" : 777 } }
+{ "_id" : { "name" : "Eileen", "sailorId" : 919 } }
+{ "_id" : { "name" : "James", "sailorId" : 707 } }
+
+
+
+
 b)
 
 
-db.sailor.find({skills:["row", "sail", "motor" ]},{ "name":1, "_id":0});
+>  db.sailor.distinct('name' , {'skills':{$size:3, $all:["row", "sail", "motor" ]}});
+[ "Peter" ]
 
 
 Question 5
@@ -264,22 +387,26 @@ a)
 
 
 
-> db.res_ref.find({'reserves.date':"2017-03-16"},{"_id":0, "reserves":0});
-{ "marina" : "Sea View" }
-{ "marina" : "Port Nicholson" }
+> db.res_ref.distinct("marina" ,  {'reserves.date':"2017-03-16"});
+[ "Sea View", "Port Nicholson" ]
 
 
-> db.boat.find({number:313},{"name":1,"_id":0});
-{ "name" : "Flying Dutch" }
-{ "name" : "Sally Ann" }
-> db.boat.find({number:919},{"name":1,"_id":0});
-{ "name" : "Mermaid" }
+
+> db.boat.distinct("name", {marina : "Sea View" , number:313});
+[ "Flying Dutch" ]
+>
+> db.boat.distinct("name", {marina : "Port Nicholson" , number:919});
+[ "Mermaid" ]
+
+>
+>
+> db.sailor.distinct("name",{sailorId:111});
+[ "Peter" ]
+>
+> db.sailor.distinct("name",{sailorId:818});
+[ "Milan" ]
 
 
-> db.sailor.find({sailorId:111},{"name":1,"_id":0});
-{ "name" : "Peter" }
-> db.sailor.find({sailorId:818},{"name":1,"_id":0});
-{ "name" : "Milan" }
 
 
 b)
