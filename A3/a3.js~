@@ -414,7 +414,22 @@ a)
 b)
 
 
+var curs = db.res_ref.find({'reserves.date':"2017-03-16"}) ;
 
+while (curs.hasNext()) {
+ref = curs.next()
+
+m= db.marina.findOne({
+name: ref.marina})
+
+b = db.boat.findOne({
+number: ref.reserves.boat})
+
+s = db.sailor.findOne({
+sailorId: ref.reserves.sailor})
+
+ret = {marinaName : m.name,boatName : b.name, sailorName :s.name}
+print(tojson(ret)) }
 
 
 
