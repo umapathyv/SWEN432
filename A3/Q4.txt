@@ -2,7 +2,7 @@ a)
 
 
 
-db.sailor.aggregate( [  {"$group": { "_id": { name: "$name", sailorId: "$sailorId" } } }  ]  );
+db.sailor.distinct("name");
 
 
 
