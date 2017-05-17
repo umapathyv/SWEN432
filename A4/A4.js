@@ -44,3 +44,59 @@
 
 ]);
 { "total_reserves" : 18 }
+
+
+4.
+
+> db.reserves.aggregate ([  {$match: {'reserves.sailor.sailorId':  {$exists:true}}} ,
+...  {$group : {_id : '$reserves.sailor.sailorId',   "no_of_reserves" : {$sum : 1} }} ,
+...   {$group : {_id : null  ,    avg_reserves: {$avg:"$no_of_reserves"} }} ,
+... {$sort : {"no_of_reserves" : -1}} ,
+... {$project:{_id:0 , avg_reserves :1}}
+... ]);
+{ "avg_reserves" : 2.7142857142857144 }
+
+
+
+
+
+5.
+
+var skills = [  "row" ] ;
+db.reserves.aggregate ([  {$match: {'reserves.boat.driven_by':  {$in: skills}}}
+]);
+
+
+var av  =  db.reserves.aggregate ([  {$match: {'reserves.sailor.sailorId':  {$exists:true}}} ,
+ {$group : {_id : '$reserves.sailor.sailorId',   "no_of_reserves" : {$sum : 1} }} ,
+  {$group : {_id : null  ,    avg_reserves: {$avg:"$no_of_reserves"} }} ,
+ {$sort : {"no_of_reserves" : -1}} ,
+{$project:{_id:0 , avg_reserves :1}}
+ ]).map( function(u) { return u.avg_reserves } );
+
+
+db.reserves.aggregate ([  {$match: {'reserves.sailor.sailorId':  {$exists:true}}} ,
+ {$group : {_id : '$reserves.sailor.sailorId', "no_of_reserves" : {$sum : 1}  }} ,
+{$match : { no_of_reserves: {$gt: parseFloat(av)} }} ,
+{$sort : {"no_of_reserves" : -1}}
+]);
+
+
+
+
+> var av  =  db.reserves.aggregate ([  {$match: {'reserves.sailor.sailorId':  {$exists:true}}} ,
+...  {$group : {_id : '$reserves.sailor.sailorId',   "no_of_reserves" : {$sum : 1} }} ,
+...   {$group : {_id : null  ,    avg_reserves: {$avg:"$no_of_reserves"} }} ,
+...  {$sort : {"no_of_reserves" : -1}} ,
+... {$project:{_id:0 , avg_reserves :1}}
+...  ]).map( function(u) { return u.avg_reserves } );
+>
+>
+> db.reserves.aggregate ([  {$match: {'reserves.sailor.sailorId':  {$exists:true}}} ,
+...  {$group : {_id : '$reserves.sailor.sailorId', "no_of_reserves" : {$sum : 1}  }} ,
+... {$match : { no_of_reserves: {$gt: parseFloat(av)} }} ,
+... {$sort : {"no_of_reserves" : -1}}
+... ]);
+{ "_id" : 818, "no_of_reserves" : 6 }
+{ "_id" : 111, "no_of_reserves" : 3 }
+{ "_id" : 707, "no_of_reserves" : 3 }
