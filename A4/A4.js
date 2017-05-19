@@ -66,9 +66,9 @@ var skills = [  "row" ] ;
 db.reserves.aggregate ([  {$match: {'reserves.boat.driven_by':  {$in: skills}}}
 ]);
 
-Bonus : 
 
 
+Bonus :
 > var av  =  db.reserves.aggregate ([  {$match: {'reserves.sailor.sailorId':  {$exists:true}}} ,
 ...  {$group : {_id : '$reserves.sailor.sailorId',   "no_of_reserves" : {$sum : 1} }} ,
 ...   {$group : {_id : null  ,    avg_reserves: {$avg:"$no_of_reserves"} }} ,
