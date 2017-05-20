@@ -96,76 +96,316 @@ Bonus :
 
 a)
 
-arthur: [A4] % sha-mongo init 2 ; sha-mongo test ;  sha-mongo start ;  sha-mongo connect  ;
-mkdir: created directory '/vol/x1/swen432/wusong3/data/shadb-cfg0'
-Starting mongod --configsvr
-about to fork child process, waiting until server is ready for connections.
-forked process: 22173
-child process started successfully, parent exiting
-Starting mongos
-2017-05-19T15:26:26.298+1200 warning: running with 1 config server should be done only for testing purposes and is not recommended for production
-about to fork child process, waiting until server is ready for connections.
-forked process: 22185
-child process started successfully, parent exiting
-Starting mongod --port 27020 shadb0
-mkdir: created directory '/vol/x1/swen432/wusong3/data/shadb0'
-about to fork child process, waiting until server is ready for connections.
-forked process: 22209
-child process started successfully, parent exiting
-Starting mongod --port 27021 shadb1
-mkdir: created directory '/vol/x1/swen432/wusong3/data/shadb1'
-about to fork child process, waiting until server is ready for connections.
-forked process: 22224
-child process started successfully, parent exiting
-Waiting 10 seconds for mongod servers to complete initializing
- sh.addShard("127.0.0.1:27020"); sh.addShard("127.0.0.1:27021"); sh.status();
-MongoDB shell version: 2.6.7
-connecting to: 127.0.0.1:27017/test
-printShardingStatus: this db does not have sharding enabled. be sure you are connecting to a mongos from the shell and not to a mongod.
-To enable Sharding for a Database
-    # Connect to mongos
-    mongo --port 27017
-    # Enable Sharding on DB
-    sh.enableSharding("<database>")
-
-    #Enable Sharding for a Collection
-    sh.shardCollection("<database>.<collection>", shard-key-pattern)
-    # EG sh.shardCollection("test.user", { "_id": 1 } )
-
-MongoDB shell version: 2.6.7
-connecting to: 127.0.0.1:27017/test
-mydb
+based on ranges partitioning
 
 
 
 
 
+b)
+i.
 
+For 2 shards ,   it has 11 chunks
+For 5 shards ,   it has 10 chunks
+For 10 shards , it has 12 chunks
 
-
-one chunk = 64MB ;
-> show dbs ;
-BoatHire      0.031GB
-BoatHire2     0.031GB
-admin         (empty)
-config        (empty)
-local         0.031GB
-mern-starter  0.031GB
-mydb          0.125GB
 
 
 [0.125*1024/2/64 ,0.125*1024/5/64, 0.125*1024/10/64]
 [1, 0.4, 0.2]
 
 
-> db.user.count ();
-200000
+ii.
+
+sha-mongo stop ;sha-mongo cleanall ;sha-mongo init 2 ; sha-mongo test ;    sha-mongo status ;
+{ "user_id" : 48999 } -->> { "user_id" : 59999 } on : shard0001 Timestamp(6, 2)
+chunks:
+                           shard0000       6
+                           shard0001       5
+
+it belongs to shard0001.
 
 
-200000/55555
-3.600036000360004
+sha-mongo stop ;sha-mongo cleanall ;sha-mongo init 5 ; sha-mongo test ;    sha-mongo status ;
+{ "user_id" : 48999 } -->> { "user_id" : 58999 } on : shard0004 Timestamp(6, 1)
+chunks:
+                              shard0002       2
+                              shard0000       2
+                              shard0001       2
+                              shard0003       2
+                              shard0004       2
+it belongs to shard0004.
+
+
+sha-mongo stop ;sha-mongo cleanall ;sha-mongo init 10 ; sha-mongo test ;    sha-mongo status ;
+{ "user_id" : 45999 } -->> { "user_id" : 55999 } on : shard0005 Timestamp(7, 1)
+
+chunks:
+                                shard0000       2
+                                shard0001       2
+                                shard0002       1
+                                shard0003       1
+                                shard0004       1
+                                shard0005       1
+                                shard0006       1
+                                shard0007       1
+                                shard0008       1
+                                shard0009       1
+
+it belongs to shard0005.
 
 
 
-sha-mongo cleanall ; sha-mongo stop ;
-sha-mongo init 2 ; sha-mongo test ;  sha-mongo connect ;   sha-mongo start ;
+c)
+
+arthur: [A4] % sha-mongo connect 5 ;
+MongoDB shell version: 2.6.7
+connecting to: 127.0.0.1:27025/test
+> use mydb ;
+switched to db mydb
+> db.user.find ({user_id:55555});
+{ "_id" : ObjectId("5920102bdec48588e3d182ac"), "user_id" : 55555, "name" : "Bill", "number" : 9349 }
+> db.user.find ({user_id:1});
+
+
+d)
+arthur: [A4] % sha-mongo connect;
+MongoDB shell version: 2.6.7
+connecting to: 127.0.0.1:27017/test
+mongos> use mydb ;
+switched to db mydb
+mongos>  db.user.find ({user_id:55555});
+{ "_id" : ObjectId("5920102bdec48588e3d182ac"), "user_id" : 55555, "name" : "Bill", "number" : 9349 }
+mongos> db.user.find ({user_id:1});
+{ "_id" : ObjectId("59201029dec48588e3d0a9aa"), "user_id" : 1, "name" : "George", "number" : 894 }
+
+e)
+mydb in a shard is a subset of mydb in mongos .
+
+f)
+
+arthur: [A4] % sha-mongo stop 5 ;
+Stopping mongod --port 27025 shadb5
+
+
+
+arthur: [A4] % sha-mongo connect ;
+MongoDB shell version: 2.6.7
+connecting to: 127.0.0.1:27017/test
+mongos> db.user.find ({user_id:55555});
+mongos> ^C
+bye
+arthur: [A4] % sha-mongo connect ;
+MongoDB shell version: 2.6.7
+connecting to: 127.0.0.1:27017/test
+mongos> use mydb;
+switched to db mydb
+mongos> db.user.find ({user_id:55555});
+error: {
+        "$err" : "socket exception [CONNECT_ERROR] for 127.0.0.1:27025",
+        "code" : 11002,
+        "shard" : "shard0005"
+}
+mongos> db.user.find ({user_id:1});
+{ "_id" : ObjectId("59201029dec48588e3d0a9aa"), "user_id" : 1, "name" : "George", "number" : 894 }
+
+10% became unavailable.
+
+arthur: [A4] % sha-mongo start  ;
+mongos> db.user.find ({user_id:55555});
+{ "_id" : ObjectId("5920102bdec48588e3d182ac"), "user_id" : 55555, "name" : "Bill", "number" : 9349 }
+
+It becomes available again when start the sha-mongo .
+
+
+Question 7
+
+a)
+
+arthur: [A4] % sharep-mongo connect 0 0
+MongoDB shell version: 2.6.7
+connecting to: 127.0.0.1:27020/test
+rs0:PRIMARY> rs.status()
+{
+        "set" : "rs0",
+        "date" : ISODate("2017-05-20T10:26:43Z"),
+        "myState" : 1,
+        "members" : [
+                {
+                        "_id" : 0,
+                        "name" : "127.0.0.1:27020",
+                        "health" : 1,
+                        "state" : 1,
+                        "stateStr" : "PRIMARY",
+                        "uptime" : 935,
+                        "optime" : Timestamp(1495275069, 1),
+                        "optimeDate" : ISODate("2017-05-20T10:11:09Z"),
+                        "electionTime" : Timestamp(1495275078, 1),
+                        "electionDate" : ISODate("2017-05-20T10:11:18Z"),
+                        "self" : true
+                },
+                {
+                        "_id" : 1,
+                        "name" : "127.0.0.1:27021",
+                        "health" : 1,
+                        "state" : 2,
+                        "stateStr" : "SECONDARY",
+                        "uptime" : 933,
+                        "optime" : Timestamp(1495275069, 1),
+                        "optimeDate" : ISODate("2017-05-20T10:11:09Z"),
+                        "lastHeartbeat" : ISODate("2017-05-20T10:26:42Z"),
+                        "lastHeartbeatRecv" : ISODate("2017-05-20T10:26:42Z"),
+                        "pingMs" : 0,
+                        "syncingTo" : "127.0.0.1:27020"
+                },
+                {
+                        "_id" : 2,
+                        "name" : "127.0.0.1:27022",
+                        "health" : 1,
+                        "state" : 2,
+                        "stateStr" : "SECONDARY",
+                        "uptime" : 933,
+                        "optime" : Timestamp(1495275069, 1),
+                        "optimeDate" : ISODate("2017-05-20T10:11:09Z"),
+                        "lastHeartbeat" : ISODate("2017-05-20T10:26:42Z"),
+                        "lastHeartbeatRecv" : ISODate("2017-05-20T10:26:42Z"),
+                        "pingMs" : 0,
+                        "syncingTo" : "127.0.0.1:27020"
+                }
+        ],
+        "ok" : 1
+}
+rs0:PRIMARY>
+
+
+So  the port number of the master server of the replica set rs0 is 27020
+
+b)
+
+i.
+arthur: [A4] % sharep-mongo connect 0 0 ;
+MongoDB shell version: 2.6.7
+connecting to: 127.0.0.1:27020/test
+rs0:PRIMARY> show dbs ;
+admin  (empty)
+local  0.281GB
+mydb   0.031GB
+rs0:PRIMARY> use mydb;
+switched to db mydb
+rs0:PRIMARY> db.user.find({user_id:1})
+{ "_id" : ObjectId("59201a50ff759c038bf6c11f"), "user_id" : 1, "name" : "Eliot", "number" : 1723 }
+
+ii.
+rs0:PRIMARY> db.user.insert({"user_id": 100000, "name": "Steve", "number": 0});
+WriteResult({ "nInserted" : 1 })
+
+
+c)
+
+arthur: [A4] % sharep-mongo connect 0 1 ;
+MongoDB shell version: 2.6.7
+connecting to: 127.0.0.1:27021/test
+rs0:SECONDARY> use mydb;
+switched to db mydb
+rs0:SECONDARY> db.user.find({user_id:1});
+error: { "$err" : "not master and slaveOk=false", "code" : 13435 }
+rs0:SECONDARY> db.user.insert({"user_id": 100000, "name": "Steve", "number": 0});
+WriteResult({ "writeError" : { "code" : undefined, "errmsg" : "not master" } })
+rs0:SECONDARY>
+
+
+d)
+
+i.
+arthur: [A4] % sharep-mongo stop 0 0 ;
+Stopping mongod --port 27020 sharep-rs0-0
+
+
+ii.
+arthur: [A4] % sharep-mongo connect ;
+MongoDB shell version: 2.6.7
+connecting to: 127.0.0.1:27017/test
+mongos> use mydb ;
+switched to db mydb
+mongos> db.user.find({user_id:1});
+{ "_id" : ObjectId("59201a50ff759c038bf6c11f"), "user_id" : 1, "name" : "Eliot", "number" : 1723 }
+mongos> db.user.insert({"user_id": 100000, "name": "Steve", "number": 0});
+WriteResult({ "nInserted" : 1 })
+
+
+e)
+
+i.
+arthur: [A4] % sharep-mongo connect 0 2
+MongoDB shell version: 2.6.7
+connecting to: 127.0.0.1:27022/test
+rs0:SECONDARY> rs.status()
+{
+        "set" : "rs0",
+        "date" : ISODate("2017-05-20T10:44:09Z"),
+        "myState" : 2,
+        "members" : [
+                {
+                        "_id" : 0,
+                        "name" : "127.0.0.1:27020",
+                        "health" : 0,
+                        "state" : 8,
+                        "stateStr" : "(not reachable/healthy)",
+                        "uptime" : 0,
+                        "optime" : Timestamp(1495276311, 1),
+                        "optimeDate" : ISODate("2017-05-20T10:31:51Z"),
+                        "lastHeartbeat" : ISODate("2017-05-20T10:44:04Z"),
+                        "lastHeartbeatRecv" : ISODate("2017-05-20T10:39:20Z"),
+                        "pingMs" : 0
+                },
+                {
+                        "_id" : 1,
+                        "name" : "127.0.0.1:27021",
+                        "health" : 0,
+                        "state" : 8,
+                        "stateStr" : "(not reachable/healthy)",
+                        "uptime" : 0,
+                        "optime" : Timestamp(1495276842, 1),
+                        "optimeDate" : ISODate("2017-05-20T10:40:42Z"),
+                        "lastHeartbeat" : ISODate("2017-05-20T10:44:07Z"),
+                        "lastHeartbeatRecv" : ISODate("2017-05-20T10:43:16Z"),
+                        "pingMs" : 0,
+                        "syncingTo" : "127.0.0.1:27022"
+                },
+                {
+                        "_id" : 2,
+                        "name" : "127.0.0.1:27022",
+                        "health" : 1,
+                        "state" : 2,
+                        "stateStr" : "SECONDARY",
+                        "uptime" : 1980,
+                        "optime" : Timestamp(1495276842, 1),
+                        "optimeDate" : ISODate("2017-05-20T10:40:42Z"),
+                        "self" : true
+                }
+        ],
+        "ok" : 1
+}
+
+
+
+There is only one SECONDARY available in rs0
+
+ii
+
+arthur: [A4] % sharep-mongo connect
+MongoDB shell version: 2.6.7
+connecting to: 127.0.0.1:27017/test
+mongos> use mydb;
+switched to db mydb
+mongos> db.user.find({user_id:1});
+error: {
+        "$err" : "ReplicaSetMonitor no master found for set: rs0",
+        "code" : 10009,
+        "shard" : "rs0"
+}
+mongos>
+
+
+f)
+if there is no master in the Replica Set. The eventually consistency can not be meet thus the data in that set is not available for reading. 
