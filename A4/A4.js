@@ -105,9 +105,9 @@ based on ranges partitioning
 b)
 i.
 
-For 2 shards ,   it has 11 chunks
-For 5 shards ,   it has 10 chunks
-For 10 shards , it has 12 chunks
+For 2 shards ,   6
+For 5 shards , 2  
+For 10 shards , 1.2
 
 
 
