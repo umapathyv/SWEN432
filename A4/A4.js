@@ -62,9 +62,8 @@
 
 5.
 
-var skills = [  "row" ] ;
-db.reserves.aggregate ([  {$match: {'reserves.boat.driven_by':  {$in: skills}}}
-]);
+var skills = db.reserves.distinct ('reserves.sailor.skills', {'reserves.sailor.name': "Paul"}) ;
+db.reserves.aggregate ([  {$match: {'reserves.boat.driven_by':  {$in: skills}}} , {$project: { boat:  '$reserves.boat.name' , _id:0 }}]);
 
 
 
@@ -106,7 +105,7 @@ b)
 i.
 
 For 2 shards ,   6
-For 5 shards , 2  
+For 5 shards , 2
 For 10 shards , 1.2
 
 
@@ -408,4 +407,4 @@ mongos>
 
 
 f)
-if there is no master in the Replica Set. The eventually consistency can not be meet thus the data in that set is not available for reading. 
+if there is no master in the Replica Set. The eventually consistency can not be meet thus the data in that set is not available for reading.
