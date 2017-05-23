@@ -51,9 +51,16 @@
 5.
 
 > var skills = db.reserves.distinct ('reserves.sailor.skills', {'reserves.sailor.name': "Paul"}) ;
-> db.reserves.aggregate ([  {$match: {'reserves.boat.driven_by':  {"$not": {"$elemMatch": {"$nin" : skills }}},  'reserves.boat.name' :  {$exists:true} }} ,
 
-... {$project: { boat:  '$reserves.boat.name' , _id:0 }}])
+var myArray = [];
+db.reserves.aggregate ([  {$match: { 'reserves.boat.driven_by' :  {$exists:true}  }} ,
+ {$match: { 'reserves.boat.driven_by':  {"$not": {"$elemMatch": {"$nin" : skills }}}   }} ,
+ {$project: { boat:  '$reserves.boat.name' , _id:0 }}]).forEach(function(row){
+   myArray.push(row.boat)
+ });
+
+myArray.filter ( function (value, index, self) {  return self.indexOf(value) === index;}) ;
+
 { "boat" : "Killer Whale" }
 { "boat" : "Night Breeze" }
 { "boat" : "Night Breeze" }
@@ -63,7 +70,34 @@
 { "boat" : "Sea Gull" }
 { "boat" : "Sea Gull" }
 
-
+var boatTypes = db.reserves.aggregate(
+  [
+    {
+      $match : {
+        "reserves.boat.driven_by" : {
+          $exists : true
+        }
+      }
+    },
+    {
+      $group : {
+        _id : "$reserves.boat.driven_by",
+        boats : {$addToSet : "$reserves.boat.name"}
+      }
+    },
+    {
+      $match : {
+        _id : {
+          $not : {
+            $elemMatch: {
+              $nin : sailor.skills
+            }
+          }
+        }
+      }
+    }
+  ]
+)
 
 
 
@@ -75,7 +109,7 @@ Bonus :
 ... ...   {$group : {_id : null  ,    avg_reserves: {$avg:"$no_of_reserves"} }} ,
 ... ...  {$sort : {"no_of_reserves" : -1}} ,
 ... ... {$project:{_id:0 , avg_reserves :1}}
-... ...  ]).map( function(u) { return u.avg_reserves } );
+... ...  ]).next();
 >
 >
 >  db.reserves.aggregate ([  {$match: {'reserves.sailor.sailorId':  {$exists:true}}} ,
