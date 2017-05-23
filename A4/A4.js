@@ -1,27 +1,15 @@
 
 1.
 
-> db.reserves.aggregate ([ {$match: {'reserves.sailor.name' :{$exists: true} }}, {$project: {_id:'$reserves.sailor.sailorId', name :'$reserves.sailor.name' , skills: '$reserves.sailor.skills' ,  address: '$reserves.sailor.address'}}]);
-{ "_id" : 707, "name" : "James", "skills" : [ "row", "sail", "motor", "fish" ], "address" : "Wellington" }
-{ "_id" : 111, "name" : "Peter", "skills" : [ "row", "sail", "motor" ], "address" : "Upper Hutt" }
-{ "_id" : 111, "name" : "Peter", "skills" : [ "row", "sail", "motor" ], "address" : "Upper Hutt" }
-{ "_id" : 818, "name" : "Milan", "skills" : [ "row", "sail", "motor", "first aid" ], "address" : "Wellington" }
-{ "_id" : 818, "name" : "Milan", "skills" : [ "row", "sail", "motor", "first aid" ], "address" : "Wellington" }
-{ "_id" : 919, "name" : "Eileen", "skills" : [ "sail", "motor", "swim" ], "address" : "Lower Hutt" }
-{ "_id" : 707, "name" : "James", "skills" : [ "row", "sail", "motor", "fish" ], "address" : "Wellington" }
-{ "_id" : 707, "name" : "James", "skills" : [ "row", "sail", "motor", "fish" ], "address" : "Wellington" }
-{ "_id" : 111, "name" : "Peter", "skills" : [ "row", "sail", "motor" ], "address" : "Upper Hutt" }
-{ "_id" : 818, "name" : "Milan", "skills" : [ "row", "sail", "motor", "first aid" ], "address" : "Wellington" }
-{ "_id" : 818, "name" : "Milan", "skills" : [ "row", "sail", "motor", "first aid" ], "address" : "Wellington" }
-{ "_id" : 999, "name" : "Charmain", "skills" : [ "row" ], "address" : "Upper Hutt" }
-{ "_id" : 999, "name" : "Charmain", "skills" : [ "row" ], "address" : "Upper Hutt" }
-{ "_id" : 777, "name" : "Alva", "skills" : [ "row", "sail", "motor", "dance" ], "address" : "Masterton" }
-{ "_id" : 919, "name" : "Eileen", "skills" : [ "sail", "motor", "swim" ], "address" : "Lower Hutt" }
+> db.reserves.aggregate ([ {$match: {'reserves.sailor.name' :{$exists: true} }}, {$group: {_id:'$reserves.sailor.sailorId',name :{$first:'$reserves.sailor.name'} , skills: {$first:'$reserves.sailor.skills'} , address : {$first:'$reserves.sailor.address'}}}]);
 { "_id" : 110, "name" : "Paul", "skills" : [ "row", "swim" ], "address" : "Upper Hutt" }
 { "_id" : 777, "name" : "Alva", "skills" : [ "row", "sail", "motor", "dance" ], "address" : "Masterton" }
+{ "_id" : 919, "name" : "Eileen", "skills" : [ "sail", "motor", "swim" ], "address" : "Lower Hutt" }
+{ "_id" : 111, "name" : "Peter", "skills" : [ "row", "sail", "motor" ], "address" : "Upper Hutt" }
+{ "_id" : 999, "name" : "Charmain", "skills" : [ "row" ], "address" : "Upper Hutt" }
 { "_id" : 818, "name" : "Milan", "skills" : [ "row", "sail", "motor", "first aid" ], "address" : "Wellington" }
-{ "_id" : 818, "name" : "Milan", "skills" : [ "row", "sail", "motor", "first aid" ], "address" : "Wellington" }
-
+{ "_id" : 707, "name" : "James", "skills" : [ "row", "sail", "motor", "fish" ], "address" : "Wellington" }
+>
 
 2.
 
@@ -64,7 +52,7 @@
 
 > var skills = db.reserves.distinct ('reserves.sailor.skills', {'reserves.sailor.name': "Paul"}) ;
 > db.reserves.aggregate ([  {$match: {'reserves.boat.driven_by':  {"$not": {"$elemMatch": {"$nin" : skills }}},  'reserves.boat.name' :  {$exists:true} }} ,
-...
+
 ... {$project: { boat:  '$reserves.boat.name' , _id:0 }}])
 { "boat" : "Killer Whale" }
 { "boat" : "Night Breeze" }
