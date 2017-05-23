@@ -36,13 +36,13 @@
 
 4.
 
-> db.reserves.aggregate ([  {$match: {'reserves.sailor.sailorId':  {$exists:true}}} ,
-...  {$group : {_id : '$reserves.sailor.sailorId',   "no_of_reserves" : {$sum : 1} }} ,
-...   {$group : {_id : null  ,    avg_reserves: {$avg:"$no_of_reserves"} }} ,
-... {$sort : {"no_of_reserves" : -1}} ,
-... {$project:{_id:0 , avg_reserves :1}}
-... ]);
-{ "avg_reserves" : 2.7142857142857144 }
+> db.reserves.aggregate ([  {$match: {'reserves.date':  {$exists:true}}} ,
+... ...  {$group : {_id : '$reserves.sailor.sailorId',   "no_of_reserves" : {$sum : 1} }} ,
+... ...   {$group : {_id : null  ,    avg_reserves: {$avg:"$no_of_reserves"} }} ,
+... ... {$sort : {"no_of_reserves" : -1}} ,
+... ... {$project:{_id:0 , avg_reserves :1}}
+... ... ]);
+{ "avg_reserves" : 3 }
 
 
 
@@ -51,53 +51,17 @@
 5.
 
 > var skills = db.reserves.distinct ('reserves.sailor.skills', {'reserves.sailor.name': "Paul"}) ;
+>
+> var myArray = [];
+> db.reserves.aggregate ([  {$match: { 'reserves.boat.driven_by' :  {$exists:true}  }} ,
+...  {$match: { 'reserves.boat.driven_by':  {"$not": {"$elemMatch": {"$nin" : skills }}}   }} ,
+...  {$project: { boat:  '$reserves.boat.name' , _id:0 }}]).forEach(function(row){
+...    myArray.push(row.boat)
+...  });
+>
+> myArray.filter ( function (value, index, self) {  return self.indexOf(value) === index;}) ;
+[ "Killer Whale", "Night Breeze", "Penguin", "Sea Gull" ]
 
-var myArray = [];
-db.reserves.aggregate ([  {$match: { 'reserves.boat.driven_by' :  {$exists:true}  }} ,
- {$match: { 'reserves.boat.driven_by':  {"$not": {"$elemMatch": {"$nin" : skills }}}   }} ,
- {$project: { boat:  '$reserves.boat.name' , _id:0 }}]).forEach(function(row){
-   myArray.push(row.boat)
- });
-
-myArray.filter ( function (value, index, self) {  return self.indexOf(value) === index;}) ;
-
-{ "boat" : "Killer Whale" }
-{ "boat" : "Night Breeze" }
-{ "boat" : "Night Breeze" }
-{ "boat" : "Night Breeze" }
-{ "boat" : "Dolphin" }
-{ "boat" : "Penguin" }
-{ "boat" : "Sea Gull" }
-{ "boat" : "Sea Gull" }
-
-var boatTypes = db.reserves.aggregate(
-  [
-    {
-      $match : {
-        "reserves.boat.driven_by" : {
-          $exists : true
-        }
-      }
-    },
-    {
-      $group : {
-        _id : "$reserves.boat.driven_by",
-        boats : {$addToSet : "$reserves.boat.name"}
-      }
-    },
-    {
-      $match : {
-        _id : {
-          $not : {
-            $elemMatch: {
-              $nin : sailor.skills
-            }
-          }
-        }
-      }
-    }
-  ]
-)
 
 
 
@@ -213,7 +177,7 @@ mongos> db.user.find ({user_id:1});
 { "_id" : ObjectId("59201029dec48588e3d0a9aa"), "user_id" : 1, "name" : "George", "number" : 894 }
 
 e)
-mydb in a shard is a subset of mydb in mongos .
+documents in a shard is a subset of mydb in mongos .
 
 f)
 
@@ -311,7 +275,7 @@ rs0:PRIMARY> rs.status()
 rs0:PRIMARY>
 
 
-So  the port number of the master server of the replica set rs0 is 27020
+So the port number of the master server of the replica set rs0 is 27020
 
 b)
 
@@ -352,7 +316,7 @@ d)
 i.
 arthur: [A4] % sharep-mongo stop 0 0 ;
 Stopping mongod --port 27020 sharep-rs0-0
-
+  status is   "stateStr" : "(not reachable/healthy)",
 
 ii.
 arthur: [A4] % sharep-mongo connect ;
