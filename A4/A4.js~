@@ -219,8 +219,6 @@ Question 7
 
 a)
 
-arthur: [A4] % sharep-mongo init ;
-
 arthur: [A4] % sharep-mongo connect 0 0
 MongoDB shell version: 2.6.7
 connecting to: 127.0.0.1:27020/test
