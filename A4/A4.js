@@ -67,23 +67,47 @@
 
 
 
-Bonus :
+>  //Bonus solution version 1 :
 >  var av  =  db.reserves.aggregate ([  {$match: {'reserves.sailor.sailorId':  {$exists:true}}} ,
-... ...  {$group : {_id : '$reserves.sailor.sailorId',   "no_of_reserves" : {$sum : 1} }} ,
-... ...   {$group : {_id : null  ,    avg_reserves: {$avg:"$no_of_reserves"} }} ,
-... ...  {$sort : {"no_of_reserves" : -1}} ,
-... ... {$project:{_id:0 , avg_reserves :1}}
-... ...  ]).map( function(u) { return u.avg_reserves } );
+... {$group : {_id : '$reserves.sailor.sailorId',   "no_of_reserves" : {$sum : 1} }} ,
+...   {$group : {_id : null  ,    avg_reserves: {$avg:"$no_of_reserves"} }} ,
+...  {$sort : {"no_of_reserves" : -1}} ,
+... {$project:{_id:0 , avg_reserves :1}}
+...   ]).map( function(u) { return u.avg_reserves } );
 >
 >
->  db.reserves.aggregate ([  {$match: {'reserves.sailor.sailorId':  {$exists:true}}} ,
-... ...  {$group : {_id : '$reserves.sailor.sailorId', name:{$first:'$reserves.sailor.name'} , "no_of_reserves" : {$sum : 1}  }} ,
-... ... {$match : { no_of_reserves: {$gt: parseFloat(av)} }} ,
-... ... {$sort : {"no_of_reserves" : -1}}
-... ... ]);
+>   db.reserves.aggregate ([  {$match: {'reserves.sailor.sailorId':  {$exists:true}}} ,
+...  {$group : {_id : '$reserves.sailor.sailorId', name:{$first:'$reserves.sailor.name'} , "no_of_reserves" : {$sum : 1}  }} ,
+...  {$match : { no_of_reserves: {$gt: parseFloat(av)} }} ,
+...  {$sort : {"no_of_reserves" : -1}}
+...  ]);
 { "_id" : 818, "name" : "Milan", "no_of_reserves" : 6 }
 { "_id" : 111, "name" : "Peter", "no_of_reserves" : 3 }
 { "_id" : 707, "name" : "James", "no_of_reserves" : 3 }
+>
+>
+>
+> 
+>
+>  //Bonus solution version 2 :
+>   var av  =  db.reserves.aggregate ([  {$match: {'reserves.sailor.sailorId':  {$exists:true}}} ,
+...   {$group : {_id : '$reserves.sailor.sailorId',   "no_of_reserves" : {$sum : 1} }} ,
+...   {$group : {_id : null  ,    avg_reserves: {$avg:"$no_of_reserves"} }} ,
+...   {$sort : {"no_of_reserves" : -1}} ,
+...  {$project:{_id:0 , avg_reserves :1}}
+...  ]).next();
+>
+>
+>   db.reserves.aggregate ([  {$match: {'reserves.sailor.sailorId':  {$exists:true}}} ,
+...  {$group : {_id : '$reserves.sailor.sailorId', name:{$first:'$reserves.sailor.name'} , "no_of_reserves" : {$sum : 1}  }} ,
+...  {$match : { no_of_reserves: {$gt: av.avg_reserves} }} ,
+...  {$sort : {"no_of_reserves" : -1}}
+...  ]);
+{ "_id" : 818, "name" : "Milan", "no_of_reserves" : 6 }
+{ "_id" : 111, "name" : "Peter", "no_of_reserves" : 3 }
+{ "_id" : 707, "name" : "James", "no_of_reserves" : 3 }
+
+
 
 
 
