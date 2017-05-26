@@ -73,7 +73,7 @@ Bonus :
 ... ...   {$group : {_id : null  ,    avg_reserves: {$avg:"$no_of_reserves"} }} ,
 ... ...  {$sort : {"no_of_reserves" : -1}} ,
 ... ... {$project:{_id:0 , avg_reserves :1}}
-... ...  ]).next();
+... ...  ]).map( function(u) { return u.avg_reserves } );
 >
 >
 >  db.reserves.aggregate ([  {$match: {'reserves.sailor.sailorId':  {$exists:true}}} ,

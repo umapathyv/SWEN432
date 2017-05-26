@@ -1,0 +1,6 @@
+db.reserves.aggregate ([  {$match: {'reserves.date':  {$exists:true}}} ,
+ {$group : {_id : '$reserves.sailor.sailorId',   "no_of_reserves" : {$sum : 1} }} ,
+  {$group : {_id : null  ,    avg_reserves: {$avg:"$no_of_reserves"} }} ,
+ {$sort : {"no_of_reserves" : -1}} ,
+ {$project:{_id:0 , avg_reserves :1}}
+ ]);
