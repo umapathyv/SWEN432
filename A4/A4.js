@@ -1,5 +1,5 @@
 
-1.
+Question 1.
 
 > db.reserves.aggregate ([ {$match: {'reserves.sailor.name' :{$exists: true} }}, {$group: {_id:'$reserves.sailor.sailorId',name :{$first:'$reserves.sailor.name'} , skills: {$first:'$reserves.sailor.skills'} , address : {$first:'$reserves.sailor.address'}}}]);
 { "_id" : 110, "name" : "Paul", "skills" : [ "row", "swim" ], "address" : "Upper Hutt" }
@@ -11,7 +11,7 @@
 { "_id" : 707, "name" : "James", "skills" : [ "row", "sail", "motor", "fish" ], "address" : "Wellington" }
 >
 
-2.
+Question 2.
 
 > db.reserves.aggregate ([  {$match: {'reserves.sailor.sailorId':  {$exists:true}}} ,
  {$group : {_id : '$reserves.sailor.sailorId',  "name": {"$first":'$reserves.sailor.name'} ,   "address": {"$first":'$reserves.sailor.address'} ,  "no_of_reserves" : {$sum : 1} }} ,
@@ -23,7 +23,7 @@
 
 
 
-3.
+Question 3.
 
 > db.reserves.aggregate ([  {$match: {'reserves.date':  {$exists:true}}} ,
 {$group : {_id : null,    "total_reserves" : {$sum : 1} }} ,
@@ -34,7 +34,7 @@
 { "total_reserves" : 18 }
 
 
-4.
+Question 4.
 
 > db.reserves.aggregate ([  {$match: {'reserves.date':  {$exists:true}}} ,
 ... ...  {$group : {_id : '$reserves.sailor.sailorId',   "no_of_reserves" : {$sum : 1} }} ,
@@ -48,7 +48,7 @@
 
 
 
-5.
+Question 5.
 
 > var skills = db.reserves.distinct ('reserves.sailor.skills', {'reserves.sailor.name': "Paul"}) ;
 >
@@ -87,7 +87,7 @@
 >
 >
 >
-> 
+>
 >
 >  //Bonus solution version 2 :
 >   var av  =  db.reserves.aggregate ([  {$match: {'reserves.sailor.sailorId':  {$exists:true}}} ,
@@ -113,14 +113,12 @@
 
 
 
-6.
+
+Question 6.
 
 a)
 
 based on ranges partitioning
-
-
-
 
 
 b)
@@ -130,10 +128,6 @@ For 2 shards ,   6
 For 5 shards , 2
 For 10 shards , 1.2
 
-
-
-[0.125*1024/2/64 ,0.125*1024/5/64, 0.125*1024/10/64]
-[1, 0.4, 0.2]
 
 
 ii.
@@ -201,8 +195,8 @@ mongos> db.user.find ({user_id:1});
 { "_id" : ObjectId("59201029dec48588e3d0a9aa"), "user_id" : 1, "name" : "George", "number" : 894 }
 
 e)
-documents in a shard is a subset of mydb in mongos .
 
+Queries runs on mongos will search records accross all the replication sets/shards.
 f)
 
 arthur: [A4] % sha-mongo stop 5 ;
@@ -243,7 +237,7 @@ Question 7
 
 a)
 
-arthur: [A4] % sharep-mongo init ;
+arthur: [A4] % sharep-mongo init ;sharep-mongo test ;
 
 arthur: [A4] % sharep-mongo connect 0 0
 MongoDB shell version: 2.6.7
@@ -431,4 +425,6 @@ mongos>
 
 
 f)
+The mongos redirects all the W/R queries to master node according to shardkey. Queries runs on mongos will search records accross all the replication sets/shards.
+But queries run in the master node will only search the records in the current shard.
 if there is no master in the Replica Set. The eventually consistency can not be meet thus the data in that set is not available for reading.
