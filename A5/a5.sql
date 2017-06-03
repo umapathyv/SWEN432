@@ -21,54 +21,25 @@ CREATE TABLE book (
 );
 
 
-SELECT EXTRACT(WEEK FROM TIMESTAMP (SELECT orderdate FROM  cust_order where)  );
-
-
- SELECT   EXTRACT( WEEK FROM TIMESTAMP   cust_order.orderdate  ) AS WEEK  FROM  cust_order order by orderdate  asc ;
-
-CREATE FUNCTION MyInsert(_sno integer, _eid integer, _sd date, _ed date, _sid integer, _status boolean)
-  RETURNS void AS
-  $BODY$
-      BEGIN
-        INSERT INTO app_for_leave(sno, eid, sd, ed, sid, status)
-        VALUES(_sno, _eid, _sd, _ed, _sid, _status);
-      END;
-  $BODY$
-  LANGUAGE 'plpgsql' VOLATILE
-  COST 100;
-
-
 
 DROP TABLE TIME ;
 CREATE TABLE time (
-      TimeId integer NOT NULL,
+      TimeId serial primary key,
       OrderDate date NOT NULL,
       DayOfWeek character(10) NOT NULL,
       Month character(10) NOT NULL,
       Year integer NOT NULL
   );
 
-DROP SEQUENCE timeIDseq ;  CREATE SEQUENCE timeIDseq START  1;
-
-INSERT INTO time (TimeId, OrderDate, DayOfWeek,Month ,Year )
-SELECT  nextval('timeIDseq') ,  cust_order.orderdate ,
-EXTRACT(DOW FROM  cust_order.orderdate ) as week  ,  EXTRACT(MONTH FROM  cust_order.orderdate ) as MONTH,
+INSERT INTO time ( OrderDate, DayOfWeek, Month ,Year )
+SELECT   cust_order.orderdate ,
+  to_char(   cust_order.orderdate  ,'Day') as week  , to_char( cust_order.orderdate ,'Month' ) as Month,
 EXTRACT(Year FROM  cust_order.orderdate ) as Year
 FROM  cust_order order by orderdate  asc ;
 
 SELECT * FROM TIME; -- ORDER BY TimeId;
 
 
-SELECT *   FROM   cust_order order by orderdate  asc ;
-
-
-SELECT  cust_order.orderdate ,
-EXTRACT(DOW FROM  cust_order.orderdate ) as week  ,  EXTRACT(MONTH FROM  cust_order.orderdate ) as MONTH,
-EXTRACT(Year FROM  cust_order.orderdate ) as Year
-FROM  cust_order order by orderdate  asc ;
-
-
-SELECT nextval('timeIDseq');
 
 
 CREATE TABLE Sales (
@@ -78,23 +49,11 @@ CREATE TABLE Sales (
     Amnt decimal NOT NULL
 );
 
-create materialized view SalesFact as select c.customerid , b.isbn , t.TimeId FROM customer as c, book as b, time as  t  ;
+drop materialized view sales ;
+create materialized view Sales (CustomerId,TimeId,ISBN ,Amnt ) as select  CustomerId, TimeId  , book.ISBN ,  SUM(order_detail.quantity * book.price) FROM customer  NATURAL JOIN  time   NATURAL JOIN   book  NATURAL JOIN  order_detail group by   CustomerId, TimeId , book.isbn  , orderid ;
 
 
-   avg(amnt) as avg_amnt from sales group by customerid;
-
-create materialized view avg_amnt_view as select customerid, avg(amnt) as avg_amnt from sales group by customerid;
-
-
+create materialized view avg_amnt_view as select CustomerId,
+  avg(Amnt) as avg_amnt from Sales group by CustomerId;
 
 Question 2
-select avg(avg_amnt) from avg_amnt_view;
-
-
-
-SELECT s.price, c.cust_key
-FROM   customer c
-       time t
-       book b
-
-WHERE  c.customerid = s.cust_id
