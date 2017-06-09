@@ -514,11 +514,11 @@ COPY customer (customerid, l_name, f_name, city, district, country) FROM stdin;
 93	Surendran           	Dany                	Wellington     	Midland        	New Zealand
 94	Barapatre           	Shweta              	Auckland       	Northland      	New Zealand
 95	Bhula               	Priyanka            	Auckland       	Northland      	New Zealand
-96	Bogoievski          	Jovan               	Skopje         	Midland        	Macedonia
+96	Bogoievski          	Jovan               	Skopje         	Povardarje     	Macedonia
 97	Bryers              	Cameron             	Porirua        	Midland        	New Zealand
 98	Chan                	Valerie             	Christchurch   	Southland      	New Zealand
 99	Cooper              	Nathan              	Christchurch   	Southland      	New Zealand
-100	Debre               	Zoltan              	Budapest       	               	Hungary
+100	Debre               	Zoltan              	Budapest       	Budapest      	Hungary
 101	Evans               	Benjamin            	Mumbai         	Maharashtra    	India
 102	Jamdar              	Leila               	Sidney         	New South Wales	Australia
 103	Jariwala            	Mansi               	Sidney         	New South Wales	Australia

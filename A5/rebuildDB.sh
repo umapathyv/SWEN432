@@ -7,3 +7,4 @@ createdb wusong3
 
 echo Adding Base schema to wusong3 db
 psql -d wusong3 -f BookOrdersDatabaseDump_17.sql
+psql wusong3 
