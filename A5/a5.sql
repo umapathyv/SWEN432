@@ -82,7 +82,7 @@ group by customer.customerid
  (5 rows)
 
 
-
+slice and rank is used.
 
 
 b)
@@ -320,35 +320,40 @@ VACUUM
 --4. The view View2.
 
 EXPLAIN ANALYZE
-SELECT sum AS money FROM View2
- ORDER BY SUM DESC limit 5;
+SELECT sum(sum) AS money ,  customerid , f_name , l_name FROM View2
+group by customerid , f_name , l_name
+ ORDER BY money DESC limit 5 ;
  VACUUM ANALYZE ;
 
  wusong3=> EXPLAIN ANALYZE
- wusong3-> SELECT sum AS money FROM View2
- wusong3->  ORDER BY SUM DESC limit 5;
-                                                   QUERY PLAN
- ---------------------------------------------------------------------------------------------------------------
-  Limit  (cost=5.51..5.52 rows=5 width=5) (actual time=0.440..0.455 rows=5 loops=1)
-    ->  Sort  (cost=5.51..5.84 rows=132 width=5) (actual time=0.436..0.441 rows=5 loops=1)
-          Sort Key: sum
-          Sort Method: top-N heapsort  Memory: 25kB
-          ->  Seq Scan on view2  (cost=0.00..3.32 rows=132 width=5) (actual time=0.012..0.184 rows=132 loops=1)
-  Planning time: 0.276 ms
-  Execution time: 0.501 ms
- (7 rows)
+wusong3-> SELECT sum(sum) AS money ,  customerid , f_name , l_name FROM View2
+wusong3-> group by customerid , f_name , l_name
+wusong3->  ORDER BY money DESC limit 5 ;
+                                                      QUERY PLAN
+----------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=7.67..7.68 rows=5 width=51) (actual time=0.928..0.944 rows=5 loops=1)
+   ->  Sort  (cost=7.67..7.93 rows=104 width=51) (actual time=0.925..0.930 rows=5 loops=1)
+         Sort Key: (sum(sum))
+         Sort Method: top-N heapsort  Memory: 25kB
+         ->  HashAggregate  (cost=4.64..5.94 rows=104 width=51) (actual time=0.551..0.703 rows=104 loops=1)
+               Group Key: customerid, f_name, l_name
+               ->  Seq Scan on view2  (cost=0.00..3.32 rows=132 width=51) (actual time=0.011..0.193 rows=132 loops=1)
+ Planning time: 0.144 ms
+ Execution time: 1.025 ms
+(9 rows)
 
- wusong3=>  VACUUM ANALYZE ;
- WARNING:  skipping "pg_authid" --- only superuser can vacuum it
- WARNING:  skipping "pg_database" --- only superuser can vacuum it
- WARNING:  skipping "pg_db_role_setting" --- only superuser can vacuum it
- WARNING:  skipping "pg_tablespace" --- only superuser can vacuum it
- WARNING:  skipping "pg_pltemplate" --- only superuser can vacuum it
- WARNING:  skipping "pg_auth_members" --- only superuser can vacuum it
- WARNING:  skipping "pg_shdepend" --- only superuser can vacuum it
- WARNING:  skipping "pg_shdescription" --- only superuser can vacuum it
- WARNING:  skipping "pg_shseclabel" --- only superuser can vacuum it
- VACUUM
+wusong3=>  VACUUM ANALYZE ;
+WARNING:  skipping "pg_authid" --- only superuser can vacuum it
+WARNING:  skipping "pg_database" --- only superuser can vacuum it
+WARNING:  skipping "pg_db_role_setting" --- only superuser can vacuum it
+WARNING:  skipping "pg_tablespace" --- only superuser can vacuum it
+WARNING:  skipping "pg_pltemplate" --- only superuser can vacuum it
+WARNING:  skipping "pg_auth_members" --- only superuser can vacuum it
+WARNING:  skipping "pg_shdepend" --- only superuser can vacuum it
+WARNING:  skipping "pg_shdescription" --- only superuser can vacuum it
+WARNING:  skipping "pg_shseclabel" --- only superuser can vacuum it
+VACUUM
+
 
 
 Explain the findings:  the cost of the execution of the QUERY drops as more aggregate function perform in MATERILIAZED view level .
@@ -483,10 +488,10 @@ VACUUM
 
 --3. The view View2,
 EXPLAIN ANALYZE
-SELECT  SUM , country FROM
+SELECT  SUM(sum) , country FROM
  view2  NATURAL JOIN
  customer
-GROUP BY country , sum order BY SUM DESC limit 1;
+GROUP BY customerid , country , sum order BY SUM DESC limit 1;
  VACUUM ANALYZE ;
 
  wusong3=> EXPLAIN ANALYZE
