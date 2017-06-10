@@ -491,30 +491,33 @@ EXPLAIN ANALYZE
 SELECT  SUM(sum) , country FROM
  view2  NATURAL JOIN
  customer
-GROUP BY customerid , country , sum order BY SUM DESC limit 1;
+GROUP BY   country  order BY SUM DESC limit 1;
  VACUUM ANALYZE ;
 
  wusong3=> EXPLAIN ANALYZE
- wusong3-> SELECT  SUM , country FROM
+ wusong3-> SELECT  SUM(sum) , country FROM
  wusong3->  view2  NATURAL JOIN
  wusong3->  customer
- wusong3-> GROUP BY country , sum order BY SUM DESC limit 1;
+ wusong3-> GROUP BY   country  order BY SUM DESC limit 1;
                                                                       QUERY PLAN
- -----------------------------------------------------------------------------------------------------------------------------------------------------
-  Limit  (cost=10.07..10.08 rows=1 width=21) (actual time=1.519..1.520 rows=1 loops=1)
-    ->  Group  (cost=10.07..10.08 rows=1 width=21) (actual time=1.516..1.516 rows=1 loops=1)
-          Group Key: view2.sum, customer.country
-          ->  Sort  (cost=10.07..10.08 rows=1 width=21) (actual time=1.512..1.512 rows=1 loops=1)
-                Sort Key: view2.sum, customer.country
-                Sort Method: quicksort  Memory: 35kB
-                ->  Hash Join  (cost=5.25..10.06 rows=1 width=21) (actual time=0.437..1.101 rows=132 loops=1)
-                      Hash Cond: ((view2.customerid = customer.customerid) AND (view2.f_name = customer.f_name) AND (view2.l_name = customer.l_name))
-                      ->  Seq Scan on view2  (cost=0.00..3.32 rows=132 width=51) (actual time=0.007..0.172 rows=132 loops=1)
-                      ->  Hash  (cost=3.18..3.18 rows=118 width=62) (actual time=0.405..0.405 rows=118 loops=1)
+
+ ---------------------------------------------------------------------------------------------------------------------------------------------
+ --------
+  Limit  (cost=10.09..10.09 rows=1 width=21) (actual time=1.450..1.451 rows=1 loops=1)
+    ->  Sort  (cost=10.09..10.09 rows=1 width=21) (actual time=1.445..1.445 rows=1 loops=1)
+          Sort Key: (sum(view2.sum))
+          Sort Method: top-N heapsort  Memory: 25kB
+          ->  HashAggregate  (cost=10.06..10.08 rows=1 width=21) (actual time=1.406..1.418 rows=7 loops=1)
+                Group Key: customer.country
+                ->  Hash Join  (cost=5.25..10.06 rows=1 width=21) (actual time=0.432..1.106 rows=132 loops=1)
+                      Hash Cond: ((view2.customerid = customer.customerid) AND (view2.f_name = customer.f_name) AND (view2.l_name = customer.l
+ _name))
+                      ->  Seq Scan on view2  (cost=0.00..3.32 rows=132 width=51) (actual time=0.007..0.174 rows=132 loops=1)
+                      ->  Hash  (cost=3.18..3.18 rows=118 width=62) (actual time=0.400..0.400 rows=118 loops=1)
                             Buckets: 1024  Batches: 1  Memory Usage: 11kB
-                            ->  Seq Scan on customer  (cost=0.00..3.18 rows=118 width=62) (actual time=0.005..0.176 rows=118 loops=1)
-  Planning time: 0.916 ms
-  Execution time: 1.598 ms
+                            ->  Seq Scan on customer  (cost=0.00..3.18 rows=118 width=62) (actual time=0.005..0.167 rows=118 loops=1)
+  Planning time: 0.929 ms
+  Execution time: 1.547 ms
  (14 rows)
 
  wusong3=>  VACUUM ANALYZE ;
@@ -527,52 +530,58 @@ GROUP BY customerid , country , sum order BY SUM DESC limit 1;
  WARNING:  skipping "pg_shdepend" --- only superuser can vacuum it
  WARNING:  skipping "pg_shdescription" --- only superuser can vacuum it
  WARNING:  skipping "pg_shseclabel" --- only superuser can vacuum it
-
  VACUUM
+
 
 --4. The view View3.
 
 EXPLAIN ANALYZE
-SELECT  SUM , country FROM
+SELECT  SUM(sum) , country FROM
  view3  NATURAL JOIN
- customer
-GROUP BY country , sum order BY SUM DESC limit 1;
+ (select distinct district , country from customer) as cc
+GROUP BY country  order BY SUM DESC limit 1;
  VACUUM ANALYZE ;
 
  wusong3=> EXPLAIN ANALYZE
- wusong3-> SELECT  SUM , country FROM
- wusong3->  view3  NATURAL JOIN
- wusong3->  customer
- wusong3-> GROUP BY country , sum order BY SUM DESC limit 1;
-                                                              QUERY PLAN
- -------------------------------------------------------------------------------------------------------------------------------------
-  Limit  (cost=394.03..394.03 rows=1 width=21) (actual time=80.172..80.173 rows=1 loops=1)
-    ->  Sort  (cost=394.03..395.03 rows=399 width=21) (actual time=80.168..80.168 rows=1 loops=1)
-          Sort Key: view3.sum
-          Sort Method: top-N heapsort  Memory: 25kB
-          ->  HashAggregate  (cost=388.04..392.03 rows=399 width=21) (actual time=79.722..79.914 rows=146 loops=1)
-                Group Key: view3.sum, customer.country
-                ->  Hash Join  (cost=4.65..284.54 rows=20701 width=21) (actual time=0.391..37.395 rows=20701 loops=1)
-                      Hash Cond: (view3.district = customer.district)
-                      ->  Seq Scan on view3  (cost=0.00..20.06 rows=1006 width=21) (actual time=0.008..1.307 rows=1006 loops=1)
-                      ->  Hash  (cost=3.18..3.18 rows=118 width=32) (actual time=0.364..0.364 rows=118 loops=1)
-                            Buckets: 1024  Batches: 1  Memory Usage: 8kB
-                            ->  Seq Scan on customer  (cost=0.00..3.18 rows=118 width=32) (actual time=0.006..0.180 rows=118 loops=1)
-  Planning time: 0.396 ms
-  Execution time: 80.262 ms
- (14 rows)
+wusong3-> SELECT  SUM(sum) , country FROM
+wusong3->  view3  NATURAL JOIN
+wusong3->  (select distinct district , country from customer) as cc
+wusong3-> GROUP BY country  order BY SUM DESC limit 1;
+                                                                   QUERY PLAN
 
- wusong3=>  VACUUM ANALYZE ;
- WARNING:  skipping "pg_authid" --- only superuser can vacuum it
- WARNING:  skipping "pg_database" --- only superuser can vacuum it
- WARNING:  skipping "pg_db_role_setting" --- only superuser can vacuum it
- WARNING:  skipping "pg_tablespace" --- only superuser can vacuum it
- WARNING:  skipping "pg_pltemplate" --- only superuser can vacuum it
- WARNING:  skipping "pg_auth_members" --- only superuser can vacuum it
- WARNING:  skipping "pg_shdepend" --- only superuser can vacuum it
- WARNING:  skipping "pg_shdescription" --- only superuser can vacuum it
- WARNING:  skipping "pg_shseclabel" --- only superuser can vacuum it
- VACUUM
+---------------------------------------------------------------------------------------------------------------------------------------------
+----
+ Limit  (cost=43.54..43.55 rows=1 width=21) (actual time=6.830..6.832 rows=1 loops=1)
+   ->  Sort  (cost=43.54..43.59 rows=17 width=21) (actual time=6.826..6.826 rows=1 loops=1)
+         Sort Key: (sum(view3.sum))
+         Sort Method: top-N heapsort  Memory: 25kB
+         ->  HashAggregate  (cost=43.25..43.46 rows=17 width=21) (actual time=6.786..6.798 rows=7 loops=1)
+               Group Key: cc.country
+               ->  Hash Join  (cost=4.32..38.22 rows=1006 width=21) (actual time=0.535..4.849 rows=1006 loops=1)
+                     Hash Cond: (view3.district = cc.district)
+                     ->  Seq Scan on view3  (cost=0.00..20.06 rows=1006 width=21) (actual time=0.011..1.261 rows=1006 loops=1)
+                     ->  Hash  (cost=4.11..4.11 rows=17 width=32) (actual time=0.505..0.505 rows=17 loops=1)
+                           Buckets: 1024  Batches: 1  Memory Usage: 2kB
+                           ->  Subquery Scan on cc  (cost=3.77..4.11 rows=17 width=32) (actual time=0.413..0.475 rows=17 loops=1)
+                                 ->  HashAggregate  (cost=3.77..3.94 rows=17 width=32) (actual time=0.409..0.432 rows=17 loops=1)
+                                       Group Key: customer.district, customer.country
+                                       ->  Seq Scan on customer  (cost=0.00..3.18 rows=118 width=32) (actual time=0.007..0.177 rows=118 loops
+=1)
+ Planning time: 0.294 ms
+ Execution time: 6.939 ms
+(17 rows)
+
+wusong3=>  VACUUM ANALYZE ;
+WARNING:  skipping "pg_authid" --- only superuser can vacuum it
+WARNING:  skipping "pg_database" --- only superuser can vacuum it
+WARNING:  skipping "pg_db_role_setting" --- only superuser can vacuum it
+WARNING:  skipping "pg_tablespace" --- only superuser can vacuum it
+WARNING:  skipping "pg_pltemplate" --- only superuser can vacuum it
+WARNING:  skipping "pg_auth_members" --- only superuser can vacuum it
+WARNING:  skipping "pg_shdepend" --- only superuser can vacuum it
+WARNING:  skipping "pg_shdescription" --- only superuser can vacuum it
+WARNING:  skipping "pg_shseclabel" --- only superuser can vacuum it
+VACUUM
 
 
 
