@@ -134,7 +134,341 @@ SELECT  COUNT(cust_order.orderid) as no_of_ord from customer NATURAL join cust_o
 
 drop  materialized view if exists division ;
 create materialized view division AS
-SELECT  n, no_of_ord  from numerator  NATURAL join  denominator ;
+SELECT  n as numerator,  no_of_ord as denominator from numerator  NATURAL join  denominator ;
 
 
 select n/no_of_ord from division ;
+
+
+
+Question 4 .
+a)
+drop  materialized view if exists View1 ;
+CREATE MATERIALIZED VIEW View1 AS
+SELECT c.CustomerId, F_Name, L_Name, District, TimeId,
+DayOfWeek, ISBN, Amnt
+FROM Sales NATURAL JOIN Customer c NATURAL JOIN Time;
+
+drop  materialized view if exists View2 ;
+CREATE MATERIALIZED VIEW View2 AS
+SELECT c.CustomerId, F_Name, L_Name, Year, SUM(Amnt)
+FROM Sales NATURAL JOIN Customer c NATURAL JOIN Time
+GROUP BY c.CustomerId, F_Name, L_Name, Year;
+
+
+--1. The “Book Orders Database”
+EXPLAIN ANALYZE
+ SELECT SUM (AMNT) AS money, customer.customerid , customer.l_name  , customer.f_name   from
+(select customer.CustomerId as  CustomerId ,TIME.TimeId as TimeId   , book.isbn AS  ISBN ,  SUM(order_detail.quantity * book.price)  AS Amnt
+from book NATURAL join order_detail NATURAL JOIN cust_order NATURAL JOIN customer NATURAL JOIN TIME
+group by  customer.CustomerId  ,  TIME.TimeId  ,book.isbn
+order by  customer.CustomerId , TIME.TimeId   ,  book.isbn  ) as sales
+NATURAL join customer
+group by customer.customerid , customer.l_name  , customer.f_name
+ ORDER BY money DESC limit 5;
+VACUUM (ANALYZE) ;
+
+wusong3=> EXPLAIN ANALYZE
+wusong3->  SELECT SUM (AMNT) AS money, customer.customerid , customer.l_name  , customer.f_name   from
+wusong3-> (select customer.CustomerId as  CustomerId ,TIME.TimeId as TimeId   , book.isbn AS  ISBN ,  SUM(order_detail.quantity * book.price)  AS Amnt
+wusong3(> from book NATURAL join order_detail NATURAL JOIN cust_order NATURAL JOIN customer NATURAL JOIN TIME
+wusong3(> group by  customer.CustomerId  ,  TIME.TimeId  ,book.isbn
+wusong3(> order by  customer.CustomerId , TIME.TimeId   ,  book.isbn  ) as sales
+wusong3-> NATURAL join customer
+wusong3-> group by customer.customerid , customer.l_name  , customer.f_name
+wusong3->  ORDER BY money DESC limit 5;
+                                                                                       QUERY PLAN
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=197.83..197.84 rows=5 width=78) (actual time=24.364..24.380 rows=5 loops=1)
+   ->  Sort  (cost=197.83..198.12 rows=118 width=78) (actual time=24.359..24.364 rows=5 loops=1)
+         Sort Key: (sum((sum(((order_detail.quantity)::numeric * book.price)))))
+         Sort Method: top-N heapsort  Memory: 25kB
+         ->  HashAggregate  (cost=194.39..195.87 rows=118 width=78) (actual time=23.991..24.146 rows=104 loops=1)
+               Group Key: customer.customerid, customer.l_name, customer.f_name
+               ->  Hash Join  (cost=133.29..187.90 rows=649 width=78) (actual time=12.429..21.238 rows=1070 loops=1)
+                     Hash Cond: (customer_1.customerid = customer.customerid)
+                     ->  GroupAggregate  (cost=128.63..161.63 rows=1100 width=19) (actual time=12.060..17.896 rows=1070 loops=1)
+                           Group Key: customer_1.customerid, "time".timeid, book.isbn
+                           ->  Sort  (cost=128.63..131.38 rows=1100 width=19) (actual time=12.033..13.433 rows=1100 loops=1)
+                                 Sort Key: customer_1.customerid, "time".timeid, book.isbn
+                                 Sort Method: quicksort  Memory: 134kB
+                                 ->  Hash Join  (cost=23.82..73.06 rows=1100 width=19) (actual time=2.594..9.759 rows=1100 loops=1)
+                                       Hash Cond: (order_detail.isbn = book.isbn)
+                                       ->  Hash Join  (cost=22.55..56.67 rows=1100 width=14) (actual time=2.541..6.918 rows=1100 loops=1)
+                                             Hash Cond: (order_detail.orderid = cust_order.orderid)
+                                             ->  Seq Scan on order_detail  (cost=0.00..19.00 rows=1100 width=10) (actual time=0.004..1.330 rows=1100 loops=1)
+                                             ->  Hash  (cost=19.77..19.77 rows=222 width=12) (actual time=2.524..2.524 rows=222 loops=1)
+                                                   Buckets: 1024  Batches: 1  Memory Usage: 10kB
+                                                   ->  Hash Join  (cost=9.45..19.77 rows=222 width=12) (actual time=0.709..2.191 rows=222 loops=1)
+                                                         Hash Cond: (cust_order.orderdate = "time".orderdate)
+                                                         ->  Hash Join  (cost=4.65..11.93 rows=222 width=12) (actual time=0.345..1.223 rows=222 loops=1)
+                                                               Hash Cond: (cust_order.customerid = customer_1.customerid)
+                                                               ->  Seq Scan on cust_order  (cost=0.00..4.22 rows=222 width=12) (actual time=0.004..0.275 rows=222 loops=1)
+                                                               ->  Hash  (cost=3.18..3.18 rows=118 width=4) (actual time=0.326..0.326 rows=118 loops=1)
+                                                                     Buckets: 1024  Batches: 1  Memory Usage: 5kB
+                                                                     ->  Seq Scan on customer customer_1  (cost=0.00..3.18 rows=118 width=4) (actual time=0.003..0.153 rows=118 loops=1)
+                                                         ->  Hash  (cost=3.24..3.24 rows=124 width=8) (actual time=0.351..0.351 rows=124 loops=1)
+                                                               Buckets: 1024  Batches: 1  Memory Usage: 5kB
+                                                               ->  Seq Scan on "time"  (cost=0.00..3.24 rows=124 width=8) (actual time=0.006..0.173 rows=124 loops=1)
+                                       ->  Hash  (cost=1.12..1.12 rows=12 width=9) (actual time=0.042..0.042 rows=12 loops=1)
+                                             Buckets: 1024  Batches: 1  Memory Usage: 1kB
+                                             ->  Seq Scan on book  (cost=0.00..1.12 rows=12 width=9) (actual time=0.003..0.021 rows=12 loops=1)
+                     ->  Hash  (cost=3.18..3.18 rows=118 width=46) (actual time=0.354..0.354 rows=118 loops=1)
+                           Buckets: 1024  Batches: 1  Memory Usage: 9kB
+                           ->  Seq Scan on customer  (cost=0.00..3.18 rows=118 width=46) (actual time=0.007..0.171 rows=118 loops=1)
+ Planning time: 1.608 ms
+ Execution time: 24.567 ms
+(39 rows)
+
+wusong3=> VACUUM (ANALYZE) ;
+WARNING:  skipping "pg_authid" --- only superuser can vacuum it
+WARNING:  skipping "pg_database" --- only superuser can vacuum it
+WARNING:  skipping "pg_db_role_setting" --- only superuser can vacuum it
+WARNING:  skipping "pg_tablespace" --- only superuser can vacuum it
+WARNING:  skipping "pg_pltemplate" --- only superuser can vacuum it
+WARNING:  skipping "pg_auth_members" --- only superuser can vacuum it
+WARNING:  skipping "pg_shdepend" --- only superuser can vacuum it
+WARNING:  skipping "pg_shdescription" --- only superuser can vacuum it
+WARNING:  skipping "pg_shseclabel" --- only superuser can vacuum it
+
+VACUUM
+
+
+--2. The Data Mart,
+EXPLAIN ANALYZE
+SELECT SUM (AMNT) AS money, customer.customerid , customer.l_name  , customer.f_name   from sales  NATURAL join customer
+group by customer.customerid , customer.l_name  , customer.f_name
+ ORDER BY money DESC limit 5;
+VACUUM (ANALYZE) ;
+
+wusong3=> EXPLAIN ANALYZE
+wusong3-> SELECT SUM (AMNT) AS money, customer.customerid , customer.l_name  , customer.f_name   from sales  NATURAL join customer
+wusong3-> group by customer.customerid , customer.l_name  , customer.f_name
+wusong3->  ORDER BY money DESC limit 5;
+                                                             QUERY PLAN
+-------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=51.20..51.21 rows=5 width=51) (actual time=7.827..7.842 rows=5 loops=1)
+   ->  Sort  (cost=51.20..51.50 rows=118 width=51) (actual time=7.823..7.828 rows=5 loops=1)
+         Sort Key: (sum(sales.amnt))
+         Sort Method: top-N heapsort  Memory: 25kB
+         ->  HashAggregate  (cost=47.77..49.24 rows=118 width=51) (actual time=7.451..7.611 rows=104 loops=1)
+               Group Key: customer.customerid, customer.l_name, customer.f_name
+               ->  Hash Join  (cost=4.65..37.07 rows=1070 width=51) (actual time=0.381..4.743 rows=1070 loops=1)
+                     Hash Cond: (sales.customerid = customer.customerid)
+                     ->  Seq Scan on sales  (cost=0.00..17.70 rows=1070 width=9) (actual time=0.008..1.361 rows=1070 loops=1)
+                     ->  Hash  (cost=3.18..3.18 rows=118 width=46) (actual time=0.355..0.355 rows=118 loops=1)
+                           Buckets: 1024  Batches: 1  Memory Usage: 9kB
+                           ->  Seq Scan on customer  (cost=0.00..3.18 rows=118 width=46) (actual time=0.004..0.162 rows=118 loops=1)
+ Planning time: 0.420 ms
+ Execution time: 7.948 ms
+(14 rows)
+
+wusong3=> VACUUM (ANALYZE) ;
+WARNING:  skipping "pg_authid" --- only superuser can vacuum it
+WARNING:  skipping "pg_database" --- only superuser can vacuum it
+WARNING:  skipping "pg_db_role_setting" --- only superuser can vacuum it
+WARNING:  skipping "pg_tablespace" --- only superuser can vacuum it
+WARNING:  skipping "pg_pltemplate" --- only superuser can vacuum it
+WARNING:  skipping "pg_auth_members" --- only superuser can vacuum it
+WARNING:  skipping "pg_shdepend" --- only superuser can vacuum it
+WARNING:  skipping "pg_shdescription" --- only superuser can vacuum it
+WARNING:  skipping "pg_shseclabel" --- only superuser can vacuum it
+VACUUM
+
+
+--3. The view View1,
+
+
+EXPLAIN ANALYZE
+SELECT SUM (AMNT) AS money FROM View1 GROUP BY customerId
+ ORDER BY money DESC limit 5;
+VACUUM ANALYZE ;
+
+wusong3=> EXPLAIN ANALYZE
+wusong3-> SELECT SUM (AMNT) AS money FROM View1 GROUP BY customerId
+wusong3->  ORDER BY money DESC limit 5;
+                                                       QUERY PLAN
+------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=36.08..36.09 rows=5 width=9) (actual time=3.829..3.845 rows=5 loops=1)
+   ->  Sort  (cost=36.08..36.34 rows=104 width=9) (actual time=3.824..3.828 rows=5 loops=1)
+         Sort Key: (sum(amnt))
+         Sort Method: top-N heapsort  Memory: 25kB
+         ->  HashAggregate  (cost=33.05..34.35 rows=104 width=9) (actual time=3.452..3.622 rows=104 loops=1)
+               Group Key: customerid
+               ->  Seq Scan on view1  (cost=0.00..27.70 rows=1070 width=9) (actual time=0.006..1.344 rows=1070 loops=1)
+ Planning time: 0.213 ms
+ Execution time: 3.924 ms
+(9 rows)
+
+wusong3=> VACUUM ANALYZE ;
+WARNING:  skipping "pg_authid" --- only superuser can vacuum it
+WARNING:  skipping "pg_database" --- only superuser can vacuum it
+WARNING:  skipping "pg_db_role_setting" --- only superuser can vacuum it
+WARNING:  skipping "pg_tablespace" --- only superuser can vacuum it
+WARNING:  skipping "pg_pltemplate" --- only superuser can vacuum it
+WARNING:  skipping "pg_auth_members" --- only superuser can vacuum it
+WARNING:  skipping "pg_shdepend" --- only superuser can vacuum it
+WARNING:  skipping "pg_shdescription" --- only superuser can vacuum it
+WARNING:  skipping "pg_shseclabel" --- only superuser can vacuum it
+VACUUM
+
+
+
+--4. The view View2.
+
+EXPLAIN ANALYZE
+SELECT sum AS money FROM View2
+ ORDER BY SUM DESC limit 5;
+ VACUUM ANALYZE ;
+
+ wusong3=> EXPLAIN ANALYZE
+ wusong3-> SELECT sum AS money FROM View2
+ wusong3->  ORDER BY SUM DESC limit 5;
+                                                   QUERY PLAN
+ ---------------------------------------------------------------------------------------------------------------
+  Limit  (cost=5.51..5.52 rows=5 width=5) (actual time=0.440..0.455 rows=5 loops=1)
+    ->  Sort  (cost=5.51..5.84 rows=132 width=5) (actual time=0.436..0.441 rows=5 loops=1)
+          Sort Key: sum
+          Sort Method: top-N heapsort  Memory: 25kB
+          ->  Seq Scan on view2  (cost=0.00..3.32 rows=132 width=5) (actual time=0.012..0.184 rows=132 loops=1)
+  Planning time: 0.276 ms
+  Execution time: 0.501 ms
+ (7 rows)
+
+ wusong3=>  VACUUM ANALYZE ;
+ WARNING:  skipping "pg_authid" --- only superuser can vacuum it
+ WARNING:  skipping "pg_database" --- only superuser can vacuum it
+ WARNING:  skipping "pg_db_role_setting" --- only superuser can vacuum it
+ WARNING:  skipping "pg_tablespace" --- only superuser can vacuum it
+ WARNING:  skipping "pg_pltemplate" --- only superuser can vacuum it
+ WARNING:  skipping "pg_auth_members" --- only superuser can vacuum it
+ WARNING:  skipping "pg_shdepend" --- only superuser can vacuum it
+ WARNING:  skipping "pg_shdescription" --- only superuser can vacuum it
+ WARNING:  skipping "pg_shseclabel" --- only superuser can vacuum it
+ VACUUM
+
+
+Explain the findings:  the cost of the execution of the QUERY drops as more aggregate function perform in MATERILIAZED view level .
+
+
+b)
+drop  materialized view if exists View3 ;
+CREATE MATERIALIZED VIEW View3 AS
+SELECT District, TimeId, DayOfWeek, ISBN, SUM(Amnt)
+FROM Sales NATURAL JOIN Customer NATURAL JOIN Time
+GROUP BY District, TimeId, DayOfWeek, ISBN;
+
+
+--1. The “Book Orders Database”
+EXPLAIN ANALYZE
+
+SELECT  SUM(Amnt) , country FROM
+ customer NATURAL JOIN
+(select customer.CustomerId as  CustomerId ,TIME.TimeId as TimeId   , book.isbn AS  ISBN ,  SUM(order_detail.quantity * book.price)  AS Amnt
+from book NATURAL join order_detail NATURAL JOIN cust_order NATURAL JOIN customer NATURAL JOIN TIME
+group by  customer.CustomerId  ,  TIME.TimeId  ,book.isbn
+order by  customer.CustomerId , TIME.TimeId   ,  book.isbn  ) AS sales
+GROUP BY country order BY SUM DESC limit 1;
+
+
+
+ VACUUM ANALYZE ;
+
+--2. The Data Mart,
+EXPLAIN ANALYZE
+
+SELECT  SUM(Amnt) , country FROM
+ customer NATURAL JOIN
+sales
+GROUP BY country order BY SUM DESC limit 1;
+
+
+ VACUUM ANALYZE ;
+
+--3. The view View2,
+EXPLAIN ANALYZE
+SELECT  SUM , country FROM
+ view2  NATURAL JOIN
+ customer
+GROUP BY country , sum order BY SUM DESC limit 1;
+ VACUUM ANALYZE ;
+
+ wusong3=> EXPLAIN ANALYZE
+ wusong3-> SELECT  SUM , country FROM
+ wusong3->  view2  NATURAL JOIN
+ wusong3->  customer
+ wusong3-> GROUP BY country , sum order BY SUM DESC limit 1;
+                                                                      QUERY PLAN
+ -----------------------------------------------------------------------------------------------------------------------------------------------------
+  Limit  (cost=10.07..10.08 rows=1 width=21) (actual time=1.519..1.520 rows=1 loops=1)
+    ->  Group  (cost=10.07..10.08 rows=1 width=21) (actual time=1.516..1.516 rows=1 loops=1)
+          Group Key: view2.sum, customer.country
+          ->  Sort  (cost=10.07..10.08 rows=1 width=21) (actual time=1.512..1.512 rows=1 loops=1)
+                Sort Key: view2.sum, customer.country
+                Sort Method: quicksort  Memory: 35kB
+                ->  Hash Join  (cost=5.25..10.06 rows=1 width=21) (actual time=0.437..1.101 rows=132 loops=1)
+                      Hash Cond: ((view2.customerid = customer.customerid) AND (view2.f_name = customer.f_name) AND (view2.l_name = customer.l_name))
+                      ->  Seq Scan on view2  (cost=0.00..3.32 rows=132 width=51) (actual time=0.007..0.172 rows=132 loops=1)
+                      ->  Hash  (cost=3.18..3.18 rows=118 width=62) (actual time=0.405..0.405 rows=118 loops=1)
+                            Buckets: 1024  Batches: 1  Memory Usage: 11kB
+                            ->  Seq Scan on customer  (cost=0.00..3.18 rows=118 width=62) (actual time=0.005..0.176 rows=118 loops=1)
+  Planning time: 0.916 ms
+  Execution time: 1.598 ms
+ (14 rows)
+
+ wusong3=>  VACUUM ANALYZE ;
+ WARNING:  skipping "pg_authid" --- only superuser can vacuum it
+ WARNING:  skipping "pg_database" --- only superuser can vacuum it
+ WARNING:  skipping "pg_db_role_setting" --- only superuser can vacuum it
+ WARNING:  skipping "pg_tablespace" --- only superuser can vacuum it
+ WARNING:  skipping "pg_pltemplate" --- only superuser can vacuum it
+ WARNING:  skipping "pg_auth_members" --- only superuser can vacuum it
+ WARNING:  skipping "pg_shdepend" --- only superuser can vacuum it
+ WARNING:  skipping "pg_shdescription" --- only superuser can vacuum it
+ WARNING:  skipping "pg_shseclabel" --- only superuser can vacuum it
+
+ VACUUM
+
+--4. The view View3.
+
+EXPLAIN ANALYZE
+SELECT  SUM , country FROM
+ view3  NATURAL JOIN
+ customer
+GROUP BY country , sum order BY SUM DESC limit 1;
+ VACUUM ANALYZE ;
+
+ wusong3=> EXPLAIN ANALYZE
+ wusong3-> SELECT  SUM , country FROM
+ wusong3->  view3  NATURAL JOIN
+ wusong3->  customer
+ wusong3-> GROUP BY country , sum order BY SUM DESC limit 1;
+                                                              QUERY PLAN
+ -------------------------------------------------------------------------------------------------------------------------------------
+  Limit  (cost=394.03..394.03 rows=1 width=21) (actual time=80.172..80.173 rows=1 loops=1)
+    ->  Sort  (cost=394.03..395.03 rows=399 width=21) (actual time=80.168..80.168 rows=1 loops=1)
+          Sort Key: view3.sum
+          Sort Method: top-N heapsort  Memory: 25kB
+          ->  HashAggregate  (cost=388.04..392.03 rows=399 width=21) (actual time=79.722..79.914 rows=146 loops=1)
+                Group Key: view3.sum, customer.country
+                ->  Hash Join  (cost=4.65..284.54 rows=20701 width=21) (actual time=0.391..37.395 rows=20701 loops=1)
+                      Hash Cond: (view3.district = customer.district)
+                      ->  Seq Scan on view3  (cost=0.00..20.06 rows=1006 width=21) (actual time=0.008..1.307 rows=1006 loops=1)
+                      ->  Hash  (cost=3.18..3.18 rows=118 width=32) (actual time=0.364..0.364 rows=118 loops=1)
+                            Buckets: 1024  Batches: 1  Memory Usage: 8kB
+                            ->  Seq Scan on customer  (cost=0.00..3.18 rows=118 width=32) (actual time=0.006..0.180 rows=118 loops=1)
+  Planning time: 0.396 ms
+  Execution time: 80.262 ms
+ (14 rows)
+
+ wusong3=>  VACUUM ANALYZE ;
+ WARNING:  skipping "pg_authid" --- only superuser can vacuum it
+ WARNING:  skipping "pg_database" --- only superuser can vacuum it
+ WARNING:  skipping "pg_db_role_setting" --- only superuser can vacuum it
+ WARNING:  skipping "pg_tablespace" --- only superuser can vacuum it
+ WARNING:  skipping "pg_pltemplate" --- only superuser can vacuum it
+ WARNING:  skipping "pg_auth_members" --- only superuser can vacuum it
+ WARNING:  skipping "pg_shdepend" --- only superuser can vacuum it
+ WARNING:  skipping "pg_shdescription" --- only superuser can vacuum it
+ WARNING:  skipping "pg_shseclabel" --- only superuser can vacuum it
+ VACUUM
