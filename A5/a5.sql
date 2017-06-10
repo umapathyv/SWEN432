@@ -2,7 +2,7 @@ Question 1 :
 
 
 
-DROP TABLE if exists  TIME ;
+DROP TABLE if exists  TIME CASCADE;
 CREATE TABLE time (
       TimeId serial primary key,
       OrderDate date NOT NULL,
@@ -22,7 +22,7 @@ SELECT COUNT(*) FROM TIME;
 
 
 
-drop  materialized view if exists Sales ;
+drop  materialized view if exists Sales CASCADE ;
 CREATE materialized view Sales as
 select customer.CustomerId as  CustomerId ,TIME.TimeId as TimeId   , book.isbn AS  ISBN ,  SUM(order_detail.quantity * book.price)  AS Amnt
 from book NATURAL join order_detail NATURAL JOIN cust_order NATURAL JOIN customer NATURAL JOIN TIME
@@ -36,18 +36,21 @@ Question 2
 
 
 
+create materialized view avg_amnt_view as select customerid,
+avg(amnt) as avg_amnt from sales group by customerid;
+select avg(avg_amnt) from avg_amnt_view;
+select avg(amnt) from sales;
+
+
 wusong3=> create materialized view avg_amnt_view as select customerid,
 wusong3-> avg(amnt) as avg_amnt from sales group by customerid;
 SELECT 104
-wusong3=>
 wusong3=> select avg(avg_amnt) from avg_amnt_view;
          avg
 ----------------------
  202.9588687852809865
 (1 row)
 
-wusong3=>
-wusong3=>
 wusong3=> select avg(amnt) from sales;
          avg
 ----------------------
@@ -59,30 +62,10 @@ The second one is the correct answer because average of average is ignoring the 
 
 
 
-
-create materialized view customerSUM AS
-SELECT SUM(AMNT) ,  customerid FROM SALES GROUP BY customerid ;
-
-
-
-
-SELECT COUNT(DISTINCT sales.CustomerId)
-AS Total_Avg
-FROM avg_amnt_view NATURAL join  sales ;
-
-wusong3=> SELECT SUM(avg_amnt)/ COUNT(DISTINCT sales.CustomerId)
-wusong3-> AS Total_Avg
-wusong3-> FROM avg_amnt_view NATURAL join  sales ;
-       total_avg
------------------------
- 4973.7019230769230768
-(1 row)
-
-
 Question 3 .
 a)
 SELECT SUM (AMNT) AS money, customer.customerid , customer.l_name  , customer.f_name   from sales  NATURAL join customer
-group by customer.customerid , customer.l_name  , customer.f_name
+group by customer.customerid
  ORDER BY money DESC limit 5;
 
 
@@ -106,50 +89,70 @@ b)
 
 
 
-drop  materialized view if exists BestCS ;
+drop  materialized view if exists BestCS CASCADE;
 create materialized view BestCS AS
   SELECT SUM (AMNT) AS money, customer.customerid AS CID, customer.l_name  , customer.f_name   from sales  NATURAL join customer
-  group by customer.customerid , customer.l_name  , customer.f_name
+  group by customer.customerid  ,customer.l_name  , customer.f_name
   ORDER BY money DESC limit 1 ;
-SELECT CID FROM BestCS ;
 
 
-drop  materialized view if exists BestCSorders ;
+
+drop  materialized view if exists BestCSorders CASCADE;
 create materialized view BestCSorders AS
 Select Sum (AMNT) AS BST , order_detail.orderid from sales NATURAL join order_detail NATURAL JOIN customer NATURAL JOIN cust_order
 where  sales.customerid =   (SELECT CID FROM BestCS )
  group by order_detail.orderid  ;
 
 
- drop  materialized view if exists numerator ;
- create materialized view numerator AS
-SELECT COUNT(BST) as n FROM BestCSorders WHERE BST > (Select SUM(AMNT)  / COUNT(cust_order.orderid)  from customer NATURAL join cust_order NATURAL join sales) ;
+drop  materialized view if exists sumV CASCADE;
+create materialized view sumV AS
+Select SUM(AMNT)  from sales NATURAL join customer NATURAL join cust_order  ;
+
+drop  materialized view if exists countV CASCADE;
+create materialized view countV AS
+Select COUNT(*)  from  (SELECT DISTINCT orderid  FROM  order_detail ) AS ODERIDS ;
 
 
-drop  materialized view if exists denominator ;
+
+drop  materialized view if exists numerator CASCADE ;
+create materialized view numerator AS
+SELECT COUNT(*) FROM BestCSorders , ( Select sum / count  AS ord_avg_amnt from sumV NATURAL join countV ) as VIEW  WHERE BST >    ord_avg_amnt   ;
+
+
+drop  materialized view if exists denominator  CASCADE;
 create materialized view denominator AS
 SELECT  COUNT(cust_order.orderid) as no_of_ord from customer NATURAL join cust_order  where customer.customerid =  (SELECT CID FROM BestCS ) ;
 
-
-
-drop  materialized view if exists division ;
+drop  materialized view if exists division  CASCADE;
 create materialized view division AS
-SELECT  n as numerator,  no_of_ord as denominator from numerator  NATURAL join  denominator ;
+SELECT  COUNT as numerator,  no_of_ord as denominator from numerator  NATURAL join  denominator ;
 
 
-select n/no_of_ord from division ;
+select numerator/denominator::float  as perc_of_ord from division ;
+
+
+wusong3=> select numerator/denominator::float  as perc_of_ord from division ;
+    perc_of_ord
+-------------------
+ 0.857142857142857
+(1 row)
+
+
+since perc_of_ord is 85% , we estimate that "the best buyer has issued a greater (than average) number of orders with greater (than average) amounts of money",
+
+
 
 
 
 Question 4 .
 a)
-drop  materialized view if exists View1 ;
+drop  materialized view if exists View1 CASCADE ;
 CREATE MATERIALIZED VIEW View1 AS
 SELECT c.CustomerId, F_Name, L_Name, District, TimeId,
 DayOfWeek, ISBN, Amnt
 FROM Sales NATURAL JOIN Customer c NATURAL JOIN Time;
 
-drop  materialized view if exists View2 ;
+drop  materialized view if exists View2 CASCADE;
 CREATE MATERIALIZED VIEW View2 AS
 SELECT c.CustomerId, F_Name, L_Name, Year, SUM(Amnt)
 FROM Sales NATURAL JOIN Customer c NATURAL JOIN Time
@@ -352,7 +355,7 @@ Explain the findings:  the cost of the execution of the QUERY drops as more aggr
 
 
 b)
-drop  materialized view if exists View3 ;
+drop  materialized view if exists View3 CASCADE;
 CREATE MATERIALIZED VIEW View3 AS
 SELECT District, TimeId, DayOfWeek, ISBN, SUM(Amnt)
 FROM Sales NATURAL JOIN Customer NATURAL JOIN Time
@@ -361,7 +364,6 @@ GROUP BY District, TimeId, DayOfWeek, ISBN;
 
 --1. The “Book Orders Database”
 EXPLAIN ANALYZE
-
 SELECT  SUM(Amnt) , country FROM
  customer NATURAL JOIN
 (select customer.CustomerId as  CustomerId ,TIME.TimeId as TimeId   , book.isbn AS  ISBN ,  SUM(order_detail.quantity * book.price)  AS Amnt
@@ -369,21 +371,115 @@ from book NATURAL join order_detail NATURAL JOIN cust_order NATURAL JOIN custome
 group by  customer.CustomerId  ,  TIME.TimeId  ,book.isbn
 order by  customer.CustomerId , TIME.TimeId   ,  book.isbn  ) AS sales
 GROUP BY country order BY SUM DESC limit 1;
-
-
-
  VACUUM ANALYZE ;
+
+ wusong3=> EXPLAIN ANALYZE
+ wusong3-> SELECT  SUM(Amnt) , country FROM
+ wusong3->  customer NATURAL JOIN
+ wusong3-> (select customer.CustomerId as  CustomerId ,TIME.TimeId as TimeId   , book.isbn AS  ISBN ,  SUM(order_detail.quantity * book.price)  AS Amnt
+ wusong3(> from book NATURAL join order_detail NATURAL JOIN cust_order NATURAL JOIN customer NATURAL JOIN TIME
+ wusong3(> group by  customer.CustomerId  ,  TIME.TimeId  ,book.isbn
+ wusong3(> order by  customer.CustomerId , TIME.TimeId   ,  book.isbn  ) AS sales
+ wusong3-> GROUP BY country order BY SUM DESC limit 1;
+                                                                                        QUERY PLAN
+ -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+  Limit  (cost=191.27..191.27 rows=1 width=48) (actual time=23.613..23.615 rows=1 loops=1)
+    ->  Sort  (cost=191.27..191.29 rows=7 width=48) (actual time=23.608..23.608 rows=1 loops=1)
+          Sort Key: (sum((sum(((order_detail.quantity)::numeric * book.price)))))
+          Sort Method: top-N heapsort  Memory: 25kB
+          ->  HashAggregate  (cost=191.15..191.24 rows=7 width=48) (actual time=23.540..23.552 rows=7 loops=1)
+                Group Key: customer.country
+                ->  Hash Join  (cost=133.29..187.90 rows=649 width=48) (actual time=12.594..21.422 rows=1070 loops=1)
+                      Hash Cond: (customer_1.customerid = customer.customerid)
+                      ->  GroupAggregate  (cost=128.63..161.63 rows=1100 width=28) (actual time=12.226..18.079 rows=1070 loops=1)
+                            Group Key: customer_1.customerid, "time".timeid, book.isbn
+                            ->  Sort  (cost=128.63..131.38 rows=1100 width=28) (actual time=12.200..13.565 rows=1100 loops=1)
+                                  Sort Key: customer_1.customerid, "time".timeid, book.isbn
+                                  Sort Method: quicksort  Memory: 134kB
+                                  ->  Hash Join  (cost=23.82..73.06 rows=1100 width=28) (actual time=2.617..9.985 rows=1100 loops=1)
+                                        Hash Cond: (order_detail.isbn = book.isbn)
+                                        ->  Hash Join  (cost=22.55..56.67 rows=1100 width=14) (actual time=2.563..7.010 rows=1100 loops=1)
+                                              Hash Cond: (order_detail.orderid = cust_order.orderid)
+                                              ->  Seq Scan on order_detail  (cost=0.00..19.00 rows=1100 width=10) (actual time=0.008..1.410 rows=1100 loops=1)
+                                              ->  Hash  (cost=19.77..19.77 rows=222 width=12) (actual time=2.538..2.538 rows=222 loops=1)
+                                                    Buckets: 1024  Batches: 1  Memory Usage: 10kB
+                                                    ->  Hash Join  (cost=9.45..19.77 rows=222 width=12) (actual time=0.712..2.198 rows=222 loops=1)
+                                                          Hash Cond: (cust_order.orderdate = "time".orderdate)
+                                                          ->  Hash Join  (cost=4.65..11.93 rows=222 width=12) (actual time=0.350..1.221 rows=222 loops=1)
+                                                                Hash Cond: (cust_order.customerid = customer_1.customerid)
+                                                                ->  Seq Scan on cust_order  (cost=0.00..4.22 rows=222 width=12) (actual time=0.008..0.279 rows=222 loops=1)
+                                                                ->  Hash  (cost=3.18..3.18 rows=118 width=4) (actual time=0.327..0.327 rows=118 loops=1)
+                                                                      Buckets: 1024  Batches: 1  Memory Usage: 5kB
+                                                                      ->  Seq Scan on customer customer_1  (cost=0.00..3.18 rows=118 width=4) (actual time=0.005..0.157 rows=118 loops=1)
+                                                          ->  Hash  (cost=3.24..3.24 rows=124 width=8) (actual time=0.350..0.350 rows=124 loops=1)
+                                                                Buckets: 1024  Batches: 1  Memory Usage: 5kB
+                                                                ->  Seq Scan on "time"  (cost=0.00..3.24 rows=124 width=8) (actual time=0.009..0.170 rows=124 loops=1)
+                                        ->  Hash  (cost=1.12..1.12 rows=12 width=18) (actual time=0.042..0.042 rows=12 loops=1)
+                                              Buckets: 1024  Batches: 1  Memory Usage: 1kB
+                                              ->  Seq Scan on book  (cost=0.00..1.12 rows=12 width=18) (actual time=0.005..0.019 rows=12 loops=1)
+                      ->  Hash  (cost=3.18..3.18 rows=118 width=20) (actual time=0.352..0.352 rows=118 loops=1)
+                            Buckets: 1024  Batches: 1  Memory Usage: 6kB
+                            ->  Seq Scan on customer  (cost=0.00..3.18 rows=118 width=20) (actual time=0.009..0.174 rows=118 loops=1)
+  Planning time: 1.400 ms
+  Execution time: 23.793 ms
+ (39 rows)
+
+ wusong3=>  VACUUM ANALYZE ;
+ WARNING:  skipping "pg_authid" --- only superuser can vacuum it
+ WARNING:  skipping "pg_database" --- only superuser can vacuum it
+ WARNING:  skipping "pg_db_role_setting" --- only superuser can vacuum it
+ WARNING:  skipping "pg_tablespace" --- only superuser can vacuum it
+ WARNING:  skipping "pg_pltemplate" --- only superuser can vacuum it
+ WARNING:  skipping "pg_auth_members" --- only superuser can vacuum it
+ WARNING:  skipping "pg_shdepend" --- only superuser can vacuum it
+ WARNING:  skipping "pg_shdescription" --- only superuser can vacuum it
+ WARNING:  skipping "pg_shseclabel" --- only superuser can vacuum it
+ VACUUM
+
 
 --2. The Data Mart,
 EXPLAIN ANALYZE
-
 SELECT  SUM(Amnt) , country FROM
  customer NATURAL JOIN
 sales
 GROUP BY country order BY SUM DESC limit 1;
-
-
  VACUUM ANALYZE ;
+
+ wusong3=> EXPLAIN ANALYZE
+wusong3-> SELECT  SUM(Amnt) , country FROM
+wusong3->  customer NATURAL JOIN
+wusong3-> sales
+wusong3-> GROUP BY country order BY SUM DESC limit 1;
+                                                             QUERY PLAN
+-------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=42.54..42.54 rows=1 width=21) (actual time=6.780..6.782 rows=1 loops=1)
+   ->  Sort  (cost=42.54..42.56 rows=7 width=21) (actual time=6.776..6.776 rows=1 loops=1)
+         Sort Key: (sum(sales.amnt))
+         Sort Method: top-N heapsort  Memory: 25kB
+         ->  HashAggregate  (cost=42.42..42.50 rows=7 width=21) (actual time=6.736..6.745 rows=7 loops=1)
+               Group Key: customer.country
+               ->  Hash Join  (cost=4.65..37.07 rows=1070 width=21) (actual time=0.376..4.667 rows=1070 loops=1)
+                     Hash Cond: (sales.customerid = customer.customerid)
+                     ->  Seq Scan on sales  (cost=0.00..17.70 rows=1070 width=9) (actual time=0.008..1.327 rows=1070 loops=1)
+                     ->  Hash  (cost=3.18..3.18 rows=118 width=20) (actual time=0.350..0.350 rows=118 loops=1)
+                           Buckets: 1024  Batches: 1  Memory Usage: 6kB
+                           ->  Seq Scan on customer  (cost=0.00..3.18 rows=118 width=20) (actual time=0.004..0.169 rows=118 loops=1)
+ Planning time: 0.473 ms
+ Execution time: 6.871 ms
+(14 rows)
+
+wusong3=>  VACUUM ANALYZE ;
+WARNING:  skipping "pg_authid" --- only superuser can vacuum it
+WARNING:  skipping "pg_database" --- only superuser can vacuum it
+WARNING:  skipping "pg_db_role_setting" --- only superuser can vacuum it
+WARNING:  skipping "pg_tablespace" --- only superuser can vacuum it
+WARNING:  skipping "pg_pltemplate" --- only superuser can vacuum it
+WARNING:  skipping "pg_auth_members" --- only superuser can vacuum it
+WARNING:  skipping "pg_shdepend" --- only superuser can vacuum it
+WARNING:  skipping "pg_shdescription" --- only superuser can vacuum it
+WARNING:  skipping "pg_shseclabel" --- only superuser can vacuum it
+VACUUM
+
 
 --3. The view View2,
 EXPLAIN ANALYZE
@@ -472,3 +568,7 @@ GROUP BY country , sum order BY SUM DESC limit 1;
  WARNING:  skipping "pg_shdescription" --- only superuser can vacuum it
  WARNING:  skipping "pg_shseclabel" --- only superuser can vacuum it
  VACUUM
+
+
+
+ Question 5 .
