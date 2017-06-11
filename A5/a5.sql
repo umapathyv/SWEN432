@@ -133,11 +133,12 @@ select numerator/denominator::float  as perc_of_ord from division ;
 wusong3=> select numerator/denominator::float  as perc_of_ord from division ;
     perc_of_ord
 -------------------
- 0.857142857142857
+ 0.714285714285714
 (1 row)
 
 
-since perc_of_ord is 85% , we estimate that "the best buyer has issued a greater (than average) number of orders with greater (than average) amounts of money",
+
+since perc_of_ord is 71% , we estimate that "e that the best buyer has issued a greater (than average) to medium number of orders with greater (than average) amounts of money,"
 
 
 
@@ -589,18 +590,18 @@ VACUUM
 
 a)
 SELECT DISTINCT * FROM (
- SELECT customerid ,  f_name ,   city , sum(amnt) OVER w, avg(amnt) OVER w
+ SELECT customerid ,  f_name ,   city , sum(amnt) OVER ws, avg(amnt) OVER wa
    FROM sales NATURAL join time NATURAL JOIN customer
-    WHERE Month = 'April' or Month = 'May' and Year = 2017
-   WINDOW w AS (PARTITION BY city )
-
+    WHERE Month in ('April', 'May' )and Year = 2017
+   WINDOW ws AS (PARTITION BY customerid ) ,
+       wa AS (PARTITION BY city )
  )   AS T ORDER BY CITY  ;
 
 
 B)
 SELECT DISTINCT * FROM (
 SELECT    city, timeid, OrderDate , sum(amnt) OVER w1  ,  sum(amnt) OVER w2  as cumulative_sum
- FROM sales NATURAL join time NATURAL JOIN customer NATURAL join cust_order  WHERE Month = 'April' or Month = 'May' and Year = 2017
+ FROM sales NATURAL join time NATURAL JOIN customer   WHERE Month in ('April', 'May' )and Year = 2017
 WINDOW w1 AS (PARTITION BY OrderDate order by OrderDate )  , w2 AS (PARTITION BY city order by OrderDate)
 
 )   AS T   ORDER BY CITY ,  OrderDate;
