@@ -99,24 +99,23 @@ create materialized view BestCS AS
 
 drop  materialized view if exists BestCSorders CASCADE;
 create materialized view BestCSorders AS
-Select Sum (AMNT) AS BST , order_detail.orderid from sales NATURAL join order_detail NATURAL JOIN customer NATURAL JOIN cust_order
-where  sales.customerid =   (SELECT CID FROM BestCS )
- group by order_detail.orderid  ;
+  SELECT  order_detail.orderid, sum(order_detail.quantity * book.price) AS BST
+    FROM order_detail NATURAL JOIN book NATURAL JOIN cust_order NATURAL JOIN customer
+    WHERE cust_order.customerid = (SELECT CID FROM BestCS )
+    GROUP BY orderid;
 
 
-drop  materialized view if exists sumV CASCADE;
-create materialized view sumV AS
-Select SUM(AMNT)  from sales NATURAL join customer NATURAL join cust_order  ;
-
-drop  materialized view if exists countV CASCADE;
-create materialized view countV AS
-Select COUNT(*)  from  (SELECT DISTINCT orderid  FROM  order_detail ) AS ODERIDS ;
-
+drop  materialized view if exists ord_avg_amntV CASCADE;
+create materialized view ord_avg_amntV AS
+  select avg(costForEachOrder.oa) as ord_avg_amnt from
+  (SELECT order_detail.orderid,  sum(order_detail.quantity * book.price) AS oa
+  FROM order_detail NATURAL JOIN book
+  GROUP BY orderid) as costForEachOrder;
 
 
 drop  materialized view if exists numerator CASCADE ;
 create materialized view numerator AS
-SELECT COUNT(*) FROM BestCSorders , ( Select sum / count  AS ord_avg_amnt from sumV NATURAL join countV ) as VIEW  WHERE BST >    ord_avg_amnt   ;
+SELECT COUNT(*) FROM BestCSorders ,  ord_avg_amntV  WHERE BST >    ord_avg_amntV.ord_avg_amnt   ;
 
 
 drop  materialized view if exists denominator  CASCADE;
