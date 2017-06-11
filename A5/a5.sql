@@ -592,7 +592,7 @@ a)
 SELECT DISTINCT * FROM (
  SELECT customerid ,  f_name ,   city , sum(amnt) OVER w, avg(amnt) OVER w
    FROM sales NATURAL join time NATURAL JOIN customer
-    WHERE Month = 'April' or Month = 'May'
+    WHERE Month = 'April' or Month = 'May' and Year = 2017
    WINDOW w AS (PARTITION BY city )
 
  )   AS T ORDER BY CITY  ;
@@ -601,7 +601,7 @@ SELECT DISTINCT * FROM (
 B)
 SELECT DISTINCT * FROM (
 SELECT    city, timeid, OrderDate , sum(amnt) OVER w1  ,  sum(amnt) OVER w2  as cumulative_sum
- FROM sales NATURAL join time NATURAL JOIN customer NATURAL join cust_order  WHERE Month = 'April' or Month = 'May'
+ FROM sales NATURAL join time NATURAL JOIN customer NATURAL join cust_order  WHERE Month = 'April' or Month = 'May' and Year = 2017
 WINDOW w1 AS (PARTITION BY OrderDate order by OrderDate )  , w2 AS (PARTITION BY city order by OrderDate)
 
 )   AS T   ORDER BY CITY ,  OrderDate;
