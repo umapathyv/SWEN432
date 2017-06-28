@@ -82,12 +82,12 @@ group by customer.customerid
  (5 rows)
 
 
-slice and rank is used.
+rool up and rank are used.
 
 
 b)
 
-
+rank is used .
 
 drop  materialized view if exists BestCS CASCADE;
 create materialized view BestCS AS
@@ -584,6 +584,7 @@ WARNING:  skipping "pg_shseclabel" --- only superuser can vacuum it
 VACUUM
 
 
+Explain the findings:  the cost of the execution of the QUERY drops as more aggregate function perform in MATERILIAZED view level .
 
  Question 5 .
 
@@ -599,9 +600,15 @@ SELECT DISTINCT * FROM (
 
 
 B)
-SELECT DISTINCT * FROM (
-SELECT    city, timeid, OrderDate , sum(amnt) OVER w1  ,  sum(amnt) OVER w2  as cumulative_sum
- FROM sales NATURAL join time NATURAL JOIN customer   WHERE Month in ('April', 'May' )and Year = 2017
-WINDOW w1 AS (PARTITION BY OrderDate order by OrderDate )  , w2 AS (PARTITION BY city order by OrderDate)
 
-)   AS T   ORDER BY CITY ,  OrderDate;
+DROP MATERIALIZED VIEW IF EXISTS V1 CASCADE;
+CREATE MATERIALIZED VIEW V1 AS
+  SELECT  city,  timeid,  OrderDate AS day,    sum(amnt) AS ST
+  FROM sales NATURAL JOIN customer NATURAL JOIN  time
+  WHERE  Year = 2017 AND Month IN ('April', 'May')
+  GROUP BY city, timeid, OrderDate
+  ORDER BY city, timeid , OrderDate;
+
+SELECT  city,  timeid,  day,  ST AS "sum(amnt)", sum(ST) OVER W1 AS cumulative_sum
+FROM V1 WINDOW W1 AS ( PARTITION BY city ORDER BY timeid )
+ORDER BY city, timeid , day ,st;

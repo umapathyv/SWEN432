@@ -19,27 +19,6 @@ database solution just for iPhone application queries you identified in
 question 2 above.
 */
 
-CREATE TABLE IF NOT EXISTS CQLselectComment(
-   CQLid int PRIMARY KEY,
-    comment text
- );
- INSERT INTO CQLselectComment (CQLid, comment) VALUES(1 ,'--1. Get the current password of driver pondy. ;');
-
-INSERT INTO CQLselectComment (CQLid, comment) VALUES(2 , '--2. Get the number of days per month for registered driver pondy.' );
-
-INSERT INTO CQLselectComment (CQLid, comment) VALUES(3 ,  '--3. Publish a time table for passengers.');
-INSERT INTO CQLselectComment (CQLid, comment) VALUES(4 ,  '--4. Extract a list of departure stations with time in descending order');
-INSERT INTO CQLselectComment (CQLid, comment) VALUES(5 ,  '--5.Find the vehicle in Upper Hutt.');
-INSERT INTO CQLselectComment (CQLid, comment) VALUES(6 ,  '--6.Find the driver in Upper Hutt with the skill Matangi.');
-INSERT INTO CQLselectComment (CQLid, comment) VALUES(7 ,  '--7.Select the last data point for a service on a day.');
-INSERT INTO CQLselectComment (CQLid, comment) VALUES(8 ,  '--8.Select all Data points for a service on a day in a time interval 10 seconds for vehicle FA4567 with driver pondy');
-INSERT INTO CQLselectComment (CQLid, comment) VALUES(9 ,  '--9.Get the north direction neighbours for a given data point  -41.2262 IN services_no 1 and lineName Hutt Vale Line');
-INSERT INTO CQLselectComment (CQLid, comment) VALUES(10 ,  '--10.Get the south direction neighbours for a given data point  -41.2262 IN services_no 1 and lineName Hutt Vale Line ');
-
-
-
-
-
 CREATE TABLE IF NOT EXISTS drivers(
    drv_name text PRIMARY KEY,
    cur_pos text,

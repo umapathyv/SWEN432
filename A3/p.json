@@ -1,0 +1,9 @@
+{ _id: "1SWEN432_2016T1",code: "SWEN432", title: "Advanced Databases4", prerequisites: ["NWEN304", "SWEN3041"], year: 2016, term: 1, no_of_stud: 12 }
+
+{ _id: "2SWEN432_2016T1",code: "SWEN433", title: "Advanced Databases3", prerequisites: ["NWEN3042", "SWEN3041"], year: 2016, term: 1, no_of_stud: 13 }
+
+{ _id: "3SWEN432_2016T1",code: "SWEN434", title: "Advanced Databases2", prerequisites: ["NWEN3042", "SWEN304"], year: 2016, term: 1, no_of_stud: 14 }
+
+{ _id: "4SWEN432_2016T1",code: "SWEN435", title: "Advanced Databases1", prerequisites: ["NWEN304", "SWEN3041"], year: 2016, term: 1, no_of_stud: 15 }
+
+{ _id: "5SWEN432_2016T1",code: "SWEN435", title: "Advanced Databases1", prerequisites: ["NWEN304", "SWEN3041"], year: 2017, term: 1, no_of_stud: 15 }
