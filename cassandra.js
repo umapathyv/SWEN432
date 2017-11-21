@@ -23,7 +23,7 @@
 
 *@motivation :The reason I chose this code snippet is that it is the recently coding I have done which involves a certain 
 *amount of debugging and thinking and I believe it is a typical code sample which demonstrates the general overview of style
-*and process when I try to solve a practical problem via coding. The original motivation for me to write this code is to 
+*and process when I try to solve a practical problem via coding. The original motivation for me to write this code was to 
 *assist me to tackle some previous exam questions for exam preparation in a programmatically approach
 *instead of hand drawing on the paper. Because I thought this process can be automated,
 *so I implemented in it JS which has the most accessible debugging environment(browser) to me.
