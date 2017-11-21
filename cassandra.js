@@ -52,12 +52,12 @@ class Cassandra  {
     */
     get allReplicationLayouts() {
         let layouts = []; 
-        console.log ("distribution matrix: ")
         for (let i=2; i <= this.replicationFactor; i++){  
             layouts.push(this.getPartitions(this.nodes,i));  //  add one row distribution for one replication Factors into the distribution matrix ,e.g. add ["ABC", "BCD", "CDE", "DEF", "EFA", "FAB"]
             console.log("distribution for replication Factor = " +i+":");
             console.log(this.getPartitions(this.nodes,i));
         }
+        console.log ("distribution matrix: ")
         return layouts ;  
     }
     
