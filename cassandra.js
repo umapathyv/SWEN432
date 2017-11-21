@@ -129,24 +129,4 @@ const cassandra = new Cassandra(["A","B","C","D","E","F"], 8);
 
 cassandra.allReplicationLayouts;
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+console.log ("distribution matrix: ")
