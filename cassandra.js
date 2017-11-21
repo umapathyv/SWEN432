@@ -1,27 +1,33 @@
 /*
-*@desc: This code snippet is for displaying the distribution of the nodes in the Apache Cassandra distributed database cluster using 'SimpleStrategy'replication strategy given the names of nodes and the replication factor.
-*For example, given an array of nodes ["A","B","C","D","E","F"] and replication factor n=8, the code snippet will generate the following distributed layout for replication from 2 to 8. 
-*N=2 : AB,      BC,      CD,       DE,       EF,       FA,   // node A is replicated twice across the 8 partitions cluster 
-*N=3 : ABC,     BCD ,    CDE,      DEF,      EFA,      FAB   // node A is replicated three times across the 8 partitions cluster
+*@desc: This code snippet is for displaying the distribution of the nodes in the Apache Cassandra distributed 
+*database cluster using 'SimpleStrategy'replication strategy given the names of nodes and the replication factor.
+*For example, given an array of nodes ["A","B","C","D","E","F"] and replication factor n=8, 
+*the code snippet will generate the following distributed layout for replication from 2 to 8. 
+*N=2 : AB,      BC,      CD,       DE,       EF,       FA, // node A is replicated twice across the 8 partitions cluster 
+*N=3 : ABC,     BCD ,    CDE,      DEF,      EFA,      FAB // node A is replicated 3 times across the 8 partitions cluster
 *N=4 : ABCD,    BCDE,    CEDF,     DEFA,     EFAB,     FABC
 *N=5 : ABCDE,   BCDEF,   CDEFA,    DEFAB,    EFABC,    FABCD
 *N=6 : ABCDEF,  BCDEFA,  CDEFAB,   DEFABC,   EFABCD,   FABCDE
 *N=7 : ABCDEFA, BCDEFAB, CDEFABC,  DEFABCD,  EFABCDE,  FABCDEF 
 *N=8 : ABCDEFAB,BCDEFABC,CDEFABCD, DEFABCDE, EFABCDEF, FABCDEFA   
 
-*@run instruction: copy paste the code snippet into Chrome developer tools console (ctrl+shift+i) and hit enter to see the output. 
+*@run instruction: copy paste the code snippet into Chrome developer tools console (ctrl+shift+i) and hit enter to 
+*see the output. 
 
 *@last modified : 21/11/2017
 
-*@original version: https://github.com/AdrianNg/Data-Structures-and-Algorithms-with-JS/blob/72c4137c6adfa59cc8f7fe8e0f2092025f290b8e/array.js
+*@original version: 
+*https://github.com/AdrianNg/Data-Structures-and-Algorithms-with-JS/blob/72c4137c6adfa59cc8f7fe8e0f2092025f290b8e/array.js
 
 *@author: https://github.com/AdrianNg/
 
-*@motivation :The reason I chose this code snippet is that it is the recently coding I have done which involves a certain amount of debugging and thinking 
-*and I believe it is a typical code sample which demonstrates the general overview of style and process when I try to solve a practical problem via coding.  
-*It is related to one of my course http://ecs.victoria.ac.nz/Courses/SWEN432_2017T1/LectureSchedule and I used this code to assist me to tackle some previous exam questions for exam preparation in a programmatically approach 
-*instead of hand drawing on the paper. Because I thought this process can be automated, so I implemented in it JS which has the most accessible debugging environment(browser) to me.
-
+*@motivation :The reason I chose this code snippet is that it is the recently coding I have done which involves a certain 
+*amount of debugging and thinking and I believe it is a typical code sample which demonstrates the general overview of style
+*and process when I try to solve a practical problem via coding. The original motivation for me to write this code is to 
+*assist me to tackle some previous exam questions for exam preparation in a programmatically approach
+*instead of hand drawing on the paper. Because I thought this process can be automated,
+*so I implemented in it JS which has the most accessible debugging environment(browser) to me.
+*It is related to the course http://ecs.victoria.ac.nz/Courses/SWEN432_2017T1/LectureSchedule
 */
 
 
